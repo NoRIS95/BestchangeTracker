@@ -14,14 +14,14 @@ EXCHANGES = ["Биржа", "Сова", 'NetEx24', 'Шахта', 'Ферма']
 CRIPT_LIST = ['BTC', 'ETH', 'TON', 'USDT', 'XMR', 'TON']
 MONETARY_CUR_LIST = ['USDT', 'RUB']
 ALPHABET = list((''.join([chr(i) for i in range(99, 114)])).upper())
-STRING_NUMS_LIST = [i for i in range(5,11)]           #строка, где записывается цена крипты
-row_ind = 0  #индекс строки не в самой таблице, а в списке 
+STRING_NUMS_LIST = [i for i in range(5,11)]
+row_ind = 0
 CELL_CALLBACKS = {}
 
 
 for cript in CRIPT_LIST:
-    row = STRING_NUMS_LIST[row_ind] #индекс строки в самой таблице
-    col_ind = 0    #индекс колонки не в самой таблице, а под каким индексом она в списке ALPHABET
+    row = STRING_NUMS_LIST[row_ind] 
+    col_ind = 0
     for exchange in EXCHANGES:
         for money in MONETARY_CUR_LIST:
             letter = ALPHABET[col_ind]
@@ -48,4 +48,6 @@ if __name__ == '__main__':
             cell.set_value(value)
 
         time.sleep(SLEEP_TIME_SECONDS)
+
+
 
