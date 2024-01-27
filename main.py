@@ -1,9 +1,9 @@
-from callbacks import get_actual_price, get_best_rate, get_top
 import os
 import time
-from sheetfu import SpreadsheetApp
 from datetime import datetime
+from sheetfu import SpreadsheetApp
 from dotenv import load_dotenv, find_dotenv
+from callbacks import get_actual_price, get_best_rate, get_top
 
 
 load_dotenv()
