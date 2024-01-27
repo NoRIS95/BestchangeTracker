@@ -10,7 +10,7 @@ load_dotenv()
 n_top=10
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
-SLEEP_TIME_LOOP = 120
+SLEEP_TIME_LOOP = 30
 SLEEP_TIME_REQUEST = 1
 EXCHANGES = ["Биржа", "Сова", 'NetEx24', 'Шахта', 'Ферма']
 CRIPT_LIST = ['BTC', 'ETH', 'TON', 'USDT', 'XMR', 'TRX']
