@@ -62,9 +62,3 @@ def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', '
         for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
     exchangers = [e for e in exchanger_ranks]
     return list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
-
-
-    try:
-        exchanger_id = list(api.exchangers().search_by_name(exchanger_name).keys())[0]
-    except IndexError:
-        return
