@@ -15,7 +15,7 @@
   ```
   pip install -r requirements.txt
   ```
-  4. Затем нам нужно аутентифицировать Python для доступа к Google Sheets с учетными данными JSON сервисного аккаунта.[См. инструкцию](https://mljar.com/blog/authenticate-python-google-sheets-service-account-json-credentials/)
+  4. Затем нам нужно аутентифицировать Python для доступа к Google Sheets с учетными данными JSON сервисного аккаунта. [См. инструкцию](https://mljar.com/blog/authenticate-python-google-sheets-service-account-json-credentials/)
   5. После выполнения аутентифицирования Python и получения .json файла нам нужно переименовать этот файл в secret.json. Его содержимое должно выглядеть так:
   ```
   {
