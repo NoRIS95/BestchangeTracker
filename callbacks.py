@@ -13,9 +13,9 @@ def get_best_rate(exchanger_name, get_currency_name, give_currency_name):
         exchanger_id = list(api.exchangers().search_by_name(exchanger_name).keys())[0]
     except IndexError:
         return
-    get_cur_ids = {cur for cur in api.currencies().search_by_name(get_currency_name)}
-    give_cur_ids = {cur for cur in api.currencies().search_by_name(give_currency_name)}
-    rates = [r['rate'] for r in api.rates().get() if r['exchange_id'] == exchanger_id and r['give_id'] in give_cur_ids   and r['get_id'] in get_cur_ids]
+    get_cur_ids = {cur['id'] for cur in api.currencies().search_by_name(get_currency_name).values() if get_currency_name in cur['name']}
+    give_cur_ids = {cur['id'] for cur in api.currencies().search_by_name(give_currency_name).values() if give_currency_name in cur['name']}
+    rates = [r['rate'] for r in api.rates().get() if r['exchange_id'] == exchanger_id and r['give_id'] in give_cur_ids and r['get_id'] in get_cur_ids]
     if len(rates) == 0:
         return
     best_rate = min(rates)
@@ -62,3 +62,9 @@ def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', '
         for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
     exchangers = [e for e in exchanger_ranks]
     return list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
+
+
+    try:
+        exchanger_id = list(api.exchangers().search_by_name(exchanger_name).keys())[0]
+    except IndexError:
+        return
