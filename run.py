@@ -60,16 +60,17 @@ NEW_TON_NAME_NUM = 1
 def get_actual_price(get_currency_name: str, give_currency_name: str):
     return cryptocompare.get_price(get_currency_name, currency=give_currency_name)[get_currency_name][give_currency_name]
 
-def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str, exchangers, currencies):
-    try:
+def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str, exchangers, currencies, all_rates):
+    exchanger_search_result = exchangers.search_by_name(exchanger_name)
+    if exchanger_search_result:
         exchanger_id = list(exchangers.search_by_name(exchanger_name).keys())[0]
-    except IndexError:
+    else:
         return
     get_cur_ids = {cur['id'] for cur in currencies.search_by_name(get_currency_name).values() \
                   if get_currency_name in cur['name']}
     give_cur_ids = {cur['id'] for cur in currencies.search_by_name(give_currency_name).values() \
                    if give_currency_name in cur['name']}
-    rates = [r['rate'] for r in rates.get() if r['exchange_id'] == exchanger_id and r['give_id'] \
+    rates = [r['rate'] for r in all_rates if r['exchange_id'] == exchanger_id and r['give_id'] \
                    in give_cur_ids and r['get_id'] in get_cur_ids]
     if len(rates) == 0:
         return
@@ -183,7 +184,6 @@ class Currency(ABC):    #Валюта
     def set_currency_list(self, cur_list): # сеттер списка валют
         self.currency_list = cur_list
         self.currency_ids = [cur['id'] for cur in cur_list if cur['name'] in self.__id_names_list]
-        # print(self.currency_ids)
 
     def get_currency_list(self):
         return self.currency_list
@@ -449,7 +449,6 @@ class BestChangeUnit(IObserver):
 
         rate = [rate['rate'] for rate in self.__self_unit_rates if rate['get_id'] in cur_get.currency_ids\
                 and rate['give_id'] in cur_give.currency_ids]
-        # print(rate)
 
 
 # Example child class
@@ -485,27 +484,26 @@ class GoogleSheetsObserver(IObserver):
         self.currencies = None
         self.rates = None
 
+
+    def update(self):
+        
         row_ind = 0
         for cript in CRYPTOS_LIST:
             col_ind = 0
-            for exchange in EXCHANGES:
+            for exchange in ['Биржа'] + EXCHANGES:
                 for money in FIATS_LIST_PRICES:
                     if exchange == "Биржа":
                         CELL_CALLBACKS[(row_ind, col_ind)] = (get_actual_price, (cript, money))
                     else:
-                        CELL_CALLBACKS[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money,  self.exchangers, self.currencies))
+                        CELL_CALLBACKS[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money,  self.exchangers, self.currencies, self.rates))
                     col_ind += 1
                 col_ind += 1
             row_ind += 1
 
-    def update(self):
-        if not self.exchangers or not self.currencies:
-            logging.error("Exchangers or Currencies not set in GoogleSheetsObserver.")
-            return
+
         data_range = self.sheet.get_range_from_a1('C5:P35')
         backgrounds = data_range.get_backgrounds()
         values = data_range.get_values()
-        # print(type(self.currencies))
         top_exchanges = get_top(self.exchangers, self.currencies, self.rates)
         
         row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
@@ -515,9 +513,8 @@ class GoogleSheetsObserver(IObserver):
             for cr in CRYPTOS_LIST:
                 for mon in MONETARY_CUR_LIST_TOP:
                     col_ind_top += 1
-                    CELL_CALLBACKS[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon, self.exchangers, self.currencies))
+                    CELL_CALLBACKS[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon, self.exchangers, self.currencies, self.rates))
             row_ind_top += 1
-        # print(CELL_CALLBACKS.items())
         for (row_ind, col_ind), (fn, args) in CELL_CALLBACKS.items():
             value = fn(*args)
             if value is None:
@@ -525,14 +522,7 @@ class GoogleSheetsObserver(IObserver):
             values[row_ind][col_ind] = value
         data_range.set_values(values)
         data_range.set_backgrounds(backgrounds)
-        # data_range.commit()
-        time.sleep(SLEEP_TIME_LOOP)   #TODO 
-        if self.google_sheet is None:
-            raise Exception("Google Sheet not authenticated. Call authenticate_google_sheets() first.")
-        
-        self.google_sheet.clear()
-        self.google_sheet.append_row(["Currency", "Naked Price RUB", "Naked Price USDT", "Sell Price RUB", "Buy Price RUB", "Sell Price USDT", "Buy Price USDT"])
-        
+                
     def set_unit_chnges_rates(self, rates):
         self.rates = rates
 
@@ -588,14 +578,12 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI.load()
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
-        # print(type(currencies))
         if exchangers is None or currencies is None:
             logging.error("Failed to load exchangers or currencies from BestChange API.")
             return
 
         for currency in self.__cur_list:
             cur_list = [cur for cur in currencies.search_by_name(currency.name).values()]
-            # print(cur_list)
             currency.update_naked_prices()
             currency.set_currency_list(cur_list)
 
@@ -611,7 +599,6 @@ class BestChangeManager(ISubject):
                 except IndexError:
                     logging.warning(f'This exchanger {observer.name} was not found') 
                     continue
-            # observer.update_rates(self.__cur_list) #TODO
             observer.update()
 
 
@@ -624,7 +611,7 @@ class BestChangeManager(ISubject):
         thread = threading.Thread(target=run_updates)
         thread.daemon = True
         thread.start()
-        return thread  #TODO
+        return thread
         
     def __str__(self):
         ret_str = ""
@@ -709,4 +696,6 @@ if __name__ == "__main__":
     change_manager = BestChangeManager()
     google_sheets_observer = GoogleSheetsObserver(sheet_name=SHEET_NAME, spreadsheet_id=SPREADSHEET_ID, credentials_file=CREDENTIALS_FILE)
     change_manager.register_observer(google_sheets_observer)
-    change_manager.notify_observers()
+    # change_manager.notify_observers()
+    updates_daemon = change_manager.start_updates()
+    updates_daemon.join()
