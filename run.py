@@ -4,21 +4,21 @@ import time
 import threading
 from decimal import Decimal
 from bestchange_api import BestChange
-from oauth2client.service_account import ServiceAccountCredentials
 from sheetfu import SpreadsheetApp
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from collections import defaultdict
 import numpy as np
 import os
 import logging
 
 load_dotenv()
-N_TOP=10
+
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
 CREDENTIALS_FILE = os.getenv('CREDENTIALS_FILE', 'secret.json')
 SLEEP_TIME_LOOP = 30
-CELL_CALLBACKS = {}
+
+N_TOP=10
 
 EXCHANGES = ["Сова", 'NetEx24', 'Шахта', 'Ферма']
 EX_SOVA = 0
@@ -35,8 +35,8 @@ CRYPTO_XMR = 4
 CRYPTO_TRX = 5
 
 FIATS_LIST = ['RUB']
-MONETARY_CUR_LIST_TOP = ['RUB', 'USDT']
-FIATS_LIST_PRICES = MONETARY_CUR_LIST_TOP[::-1]
+FIATS_LIST_TOP = ['RUB', 'USDT']
+FIATS_LIST_PRICES = FIATS_LIST_TOP[::-1]
 RUB_TYPES = ['CASH', 'CARD']
 RUB_CASH_TYPE = 0
 RUB_CARD_TYPE = 1
@@ -56,68 +56,6 @@ OLD_NEW_TON_NAME = ["TON", "TONCOIN"]
 OLD_TON_NAME_NUM = 0
 NEW_TON_NAME_NUM = 1
 
-
-def get_actual_price(get_currency_name: str, give_currency_name: str):
-    return cryptocompare.get_price(get_currency_name, currency=give_currency_name)[get_currency_name][give_currency_name]
-
-def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str, exchangers, currencies, all_rates):
-    exchanger_search_result = exchangers.search_by_name(exchanger_name)
-    if exchanger_search_result:
-        exchanger_id = list(exchangers.search_by_name(exchanger_name).keys())[0]
-    else:
-        return
-    get_cur_ids = {cur['id'] for cur in currencies.search_by_name(get_currency_name).values() \
-                  if get_currency_name in cur['name']}
-    give_cur_ids = {cur['id'] for cur in currencies.search_by_name(give_currency_name).values() \
-                   if give_currency_name in cur['name']}
-    rates = [r['rate'] for r in all_rates if r['exchange_id'] == exchanger_id and r['give_id'] \
-                   in give_cur_ids and r['get_id'] in get_cur_ids]
-    if len(rates) == 0:
-        return
-    best_rate = min(rates)
-    return best_rate
-
-def get_top(exchangers, currencies, all_rates,  n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
-    exchangers = {v['id']:v['name'] for v in exchangers.get().values()}
-
-
-    normalized_prices = defaultdict(list)
-    currencies_dict = currencies.get()
-
-    actual_prices = {}
-    for m in money_list:
-        for c in cript_list:
-            actual_prices[(c,m)] = get_actual_price(c,m)
-
-    for rate in all_rates:
-        exchanger_id = rate['exchange_id']
-        exchanger_name = exchangers[exchanger_id]
-        
-        get_currency_id = rate['get_id']
-        get_currency_name = currencies_dict[get_currency_id]['name']
-        
-        give_currency_id = rate['give_id']
-        give_currency_name = currencies_dict[give_currency_id]['name']
-        
-        money = None
-        for m in money_list:
-            if m in give_currency_name:
-                money = m
-                break
-        cript = None
-        for c in cript_list:
-            if c in get_currency_name:
-                cript = c
-                break
-        if any([money is None, cript is None]):
-            continue
-        else:
-            normalized_prices[exchanger_name].append(rate['rate']/actual_prices[(cript,money)])
-
-    exchanger_ranks = {exchanger_name:np.mean(exchanger_prices_norm) \
-        for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
-    exchangers = [e for e in exchanger_ranks]
-    return list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
 
 class Currency(ABC):    #Валюта
     def __init__(self, naked_price_rub: Decimal = Decimal('0.0'), naked_price_usdt: Decimal = Decimal('0.0'),
@@ -475,6 +413,73 @@ class Ferma(BestChangeUnit):
         super().__init__()
         self.name = EXCHANGES[EX_FERMA]
 
+def get_actual_price(get_currency_name: str, give_currency_name: str):
+    get_currency_name = {OLD_NEW_TON_NAME[0]: OLD_NEW_TON_NAME[1]}.get(get_currency_name, get_currency_name)
+    give_currency_name = {OLD_NEW_TON_NAME[0]: OLD_NEW_TON_NAME[1]}.get(give_currency_name, give_currency_name)
+    return cryptocompare.get_price(get_currency_name, currency=give_currency_name)[get_currency_name][give_currency_name]
+
+def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str, exchangers, currencies, all_rates):
+    get_currency_name = {OLD_NEW_TON_NAME[0]: OLD_NEW_TON_NAME[1]}.get(get_currency_name, get_currency_name)
+    give_currency_name = {OLD_NEW_TON_NAME[0]: OLD_NEW_TON_NAME[1]}.get(give_currency_name, give_currency_name)
+    exchanger_search_result = exchangers.search_by_name(exchanger_name)
+    if exchanger_search_result:
+        exchanger_id = list(exchangers.search_by_name(exchanger_name).keys())[0]
+    else:
+        return
+    get_cur_ids = {cur['id'] for cur in currencies.search_by_name(get_currency_name).values() \
+                  if (get_currency_name in cur['name'])}
+    give_cur_ids = {cur['id'] for cur in currencies.search_by_name(give_currency_name).values() \
+                   if (give_currency_name in cur['name'])}
+    rates = [r['rate'] for r in all_rates if r['exchange_id'] == exchanger_id and r['give_id'] \
+                   in give_cur_ids and r['get_id'] in get_cur_ids]
+    if len(rates) == 0:
+        return
+    best_rate = min(rates)
+    return best_rate
+
+def get_top(exchangers, currencies, all_rates,  n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
+    exchangers = {v['id']:v['name'] for v in exchangers.get().values()}
+
+
+    normalized_prices = defaultdict(list)
+    currencies_dict = currencies.get()
+
+    actual_prices = {}
+    for m in money_list:
+        for c in cript_list:
+            actual_prices[(c,m)] = get_actual_price(c,m)
+
+    for rate in all_rates:
+        exchanger_id = rate['exchange_id']
+        exchanger_name = exchangers[exchanger_id]
+        
+        get_currency_id = rate['get_id']
+        get_currency_name = currencies_dict[get_currency_id]['name']
+        
+        give_currency_id = rate['give_id']
+        give_currency_name = currencies_dict[give_currency_id]['name']
+        
+        money = None
+        for m in money_list:
+            if m in give_currency_name:
+                money = m
+                break
+        cript = None
+        for c in cript_list:
+            if c in get_currency_name:
+                cript = c
+                break
+        if any([money is None, cript is None]):
+            continue
+        else:
+            normalized_prices[exchanger_name].append(rate['rate']/actual_prices[(cript,money)])
+
+    exchanger_ranks = {exchanger_name:np.mean(exchanger_prices_norm) \
+        for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
+    exchangers = [e for e in exchanger_ranks]
+    return list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
+
+
 class GoogleSheetsObserver(IObserver):
     def __init__(self, sheet_name=SHEET_NAME, spreadsheet_id=SPREADSHEET_ID, credentials_file=CREDENTIALS_FILE):
         self.sheet_name = sheet_name
@@ -486,16 +491,17 @@ class GoogleSheetsObserver(IObserver):
 
 
     def update(self):
-        
+        cell_callbacks = {}
+
         row_ind = 0
         for cript in CRYPTOS_LIST:
             col_ind = 0
             for exchange in ['Биржа'] + EXCHANGES:
                 for money in FIATS_LIST_PRICES:
                     if exchange == "Биржа":
-                        CELL_CALLBACKS[(row_ind, col_ind)] = (get_actual_price, (cript, money))
+                        cell_callbacks[(row_ind, col_ind)] = (get_actual_price, (cript, money))
                     else:
-                        CELL_CALLBACKS[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money,  self.exchangers, self.currencies, self.rates))
+                        cell_callbacks[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money,  self.exchangers, self.currencies, self.rates))
                     col_ind += 1
                 col_ind += 1
             row_ind += 1
@@ -509,13 +515,13 @@ class GoogleSheetsObserver(IObserver):
         row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
         for exch in top_exchanges:
             col_ind_top = 0
-            CELL_CALLBACKS[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
+            cell_callbacks[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
             for cr in CRYPTOS_LIST:
-                for mon in MONETARY_CUR_LIST_TOP:
+                for mon in FIATS_LIST_TOP:
                     col_ind_top += 1
-                    CELL_CALLBACKS[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon, self.exchangers, self.currencies, self.rates))
+                    cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon, self.exchangers, self.currencies, self.rates))
             row_ind_top += 1
-        for (row_ind, col_ind), (fn, args) in CELL_CALLBACKS.items():
+        for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
             value = fn(*args)
             if value is None:
                 value = '-'
@@ -535,7 +541,7 @@ class GoogleSheetsObserver(IObserver):
 
 class BestChangeManager(ISubject):
     def __init__(self):
-        self.__bestChangeAPI = BestChange(load=False, cache=True, ssl=False, cache_path='./', exchangers_reviews=False, cache_seconds= 1)
+        self.__bestChangeAPI = BestChange(load=False, cache=True, ssl=False, cache_path='./', exchangers_reviews=False, cache_seconds=1)
         self.__bestChangeAPI.load()
 
         self.__Sova_unit = Sova()
@@ -696,6 +702,6 @@ if __name__ == "__main__":
     change_manager = BestChangeManager()
     google_sheets_observer = GoogleSheetsObserver(sheet_name=SHEET_NAME, spreadsheet_id=SPREADSHEET_ID, credentials_file=CREDENTIALS_FILE)
     change_manager.register_observer(google_sheets_observer)
-    # change_manager.notify_observers()
-    updates_daemon = change_manager.start_updates()
+    # change_manager.notify_observers() # Single update
+    updates_daemon = change_manager.start_updates() # Continuous update
     updates_daemon.join()
