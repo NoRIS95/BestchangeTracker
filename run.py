@@ -711,6 +711,6 @@ if __name__ == "__main__":
     change_manager = BestChangeManager()
     google_sheets_observer = GoogleSheetsObserver(sheet_name=SHEET_NAME, spreadsheet_id=SPREADSHEET_ID, credentials_file=CREDENTIALS_FILE)
     change_manager.register_observer(google_sheets_observer)
-    # change_manager.notify_observers() # Single update
+    ## change_manager.notify_observers() # Single update
     updates_daemon = change_manager.start_updates() # Continuous update
     updates_daemon.join()
