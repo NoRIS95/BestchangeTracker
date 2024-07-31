@@ -1,0 +1,48 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
+SHEET_NAME = os.getenv('SHEET_NAME')
+CREDENTIALS_FILE = os.getenv('CREDENTIALS_FILE', 'secret.json')
+
+SLEEP_TIME_LOOP = 30
+
+N_TOP=10
+
+EXCHANGES = ["Сова", 'Alfabit', 'Шахта', 'Ферма']
+EX_SOVA = 0
+EX_NETEX24 = 1
+EX_SHAHTA = 2
+EX_FERMA = 3
+
+CRYPTOS_LIST = ['BTC', 'ETH', 'TON', 'USDT', 'XMR', 'TRX']
+CRYPTO_BTC = 0
+CRYPTO_ETH = 1
+CRYPTO_TON = 2
+CRYPTO_USDT = 3
+CRYPTO_XMR = 4
+CRYPTO_TRX = 5
+
+FIATS_LIST = ['RUB']
+FIATS_LIST_TOP = ['RUB', 'USDT'] # для нижней части таблицы (там в первой колонке рубли, во второй USDT)
+FIATS_LIST_PRICES = FIATS_LIST_TOP[::-1] # для верхней левой части таблицы (там в первой колонке USDT, во второй рубли)
+RUB_TYPES = ['CASH', 'CARD']
+RUB_CASH_TYPE = 0
+RUB_CARD_TYPE = 1
+FIAT_RUB = 0
+
+
+USDT_PROTOCOLS = ['Tether BEP20 (USDT)', 'Tether ERC20 (USDT)', 'Tether TRC20 (USDT)']
+FIAT_CARDS_METHODS = ['Visa/MasterCard RUB', 'Альфа-Банк RUB', 'ВТБ RUB', 'Газпромбанк RUB', 'Карта Мир RUB', 'Сбербанк RUB', 'Тинькофф RUB']
+USDT_TYPES = ['BEP20', 'ERC20', 'TRC20', 'CARD', 'CASH']
+BEP20_TYPE = 0
+ERC20_TYPE = 1
+TRC20_TYPE = 2
+CARD_TYPE = 3
+CASH_TYPE = 4
+
+OLD_NEW_TON_NAME = {"TON": "TONCOIN"}
+OLD_TON_NAME_NUM = 0
+NEW_TON_NAME_NUM = 1
