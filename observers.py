@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 import cryptocompare
 
 from sheetfu import SpreadsheetApp
@@ -111,15 +112,23 @@ class GoogleSheetsObserver(IObserver):
         def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str):
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
-            exchanger_search_result = self.exchangers.search_by_name(exchanger_name)
+            try:
+                exchanger_search_result = self.exchangers.search_by_name(exchanger_name)
+            except AttributeError:
+                logging.error(f'Failed to search result of exchanger {exchanger_name} from BestChange API for get best rate')  #TODO
+                return
             if exchanger_search_result:
                 exchanger_id = list(self.exchangers.search_by_name(exchanger_name).keys())[0]
             else:
                 return
-            get_cur_ids = {cur['id'] for cur in self.currencies.search_by_name(get_currency_name).values() \
-                        if (get_currency_name in cur['name'])}
-            give_cur_ids = {cur['id'] for cur in self.currencies.search_by_name(give_currency_name).values() \
-                        if (give_currency_name in cur['name'])}
+            try:
+                get_cur_ids = {cur['id'] for cur in self.currencies.search_by_name(get_currency_name).values() \
+                            if (get_currency_name in cur['name'])}
+                give_cur_ids = {cur['id'] for cur in self.currencies.search_by_name(give_currency_name).values() \
+                            if (give_currency_name in cur['name'])}
+            except:
+                logging.error(f'Failed to search getting currency or giving currency of exchanger {exchanger_name} from BestChange API for get best rate')  #TODO
+                return
             rates = [r['rate'] for r in self.rates if r['exchange_id'] == exchanger_id and r['give_id'] \
                         in give_cur_ids and r['get_id'] in get_cur_ids]
             if len(rates) == 0:
@@ -147,11 +156,17 @@ class GoogleSheetsObserver(IObserver):
         values = data_range.get_values()
         
         def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
-            exchangers = {v['id']:v['name'] for v in self.exchangers.get().values()}
-
+            try:
+                exchangers = {v['id']:v['name'] for v in self.exchangers.get().values()}
+            except AttributeError:
+                logging.error('Failed to load exchangers from BestChange API for get top')   #TODO
+                return
             normalized_prices = defaultdict(list)
-            currencies_dict = self.currencies.get()
-
+            try:
+                currencies_dict = self.currencies.get()
+            except AttributeError:
+                logging.error('Failed to load currencies from BestChange API for get top')  #TODO
+                return 
             actual_prices = {}
             for m in money_list:
                 for c in cript_list:
@@ -191,14 +206,17 @@ class GoogleSheetsObserver(IObserver):
 
 
         row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
-        for exch in top_exchanges:
-            col_ind_top = 0
-            cell_callbacks[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
-            for cr in CRYPTOS_LIST:
-                for mon in FIATS_LIST_TOP:
-                    col_ind_top += 1
-                    cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon))
-            row_ind_top += 1
+        try:
+            for exch in top_exchanges:
+                col_ind_top = 0
+                cell_callbacks[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
+                for cr in CRYPTOS_LIST:
+                    for mon in FIATS_LIST_TOP:
+                        col_ind_top += 1
+                        cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon))
+                row_ind_top += 1
+        except TypeError:
+            logging.error('Failed to load top of exchanges from BestChange API')   #TODO
         for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
             value = fn(*args)
             if value is None:

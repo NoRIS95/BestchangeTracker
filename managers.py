@@ -77,15 +77,17 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI.load()
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
-        if exchangers is None or currencies is None:
-            logging.error("Failed to load exchangers or currencies from BestChange API.")
-            return
-
-        for currency in self.__cur_list:
-            cur_list = [cur for cur in currencies.search_by_name(currency.name).values()]
-            currency.update_naked_prices()
-            currency.set_currency_list(cur_list)
-
+        # exchangers, currencies = self.__bestChangeAPI.exchangers(), None  #в этой строчке искусственно создаю поводы для исключений
+        # if exchangers is None or currencies is None:
+        #     logging.error("Failed to load exchangers or currencies from BestChange API.") Оставить этот блок или оставить исключение (84-90)?
+        #     return
+        try:
+            for currency in self.__cur_list:
+                cur_list = [cur for cur in currencies.search_by_name(currency.name).values()]
+                currency.update_naked_prices()
+                currency.set_currency_list(cur_list)
+        except AttributeError:
+            logging.error("Failed to load currencies from BestChange API.")   #TODO
         for observer in self.__observers:
             observer.set_unit_chnges_rates(all_rates)
             if isinstance(observer, GoogleSheetsObserver):
@@ -96,7 +98,10 @@ class BestChangeManager(ISubject):
                     exchanger_id = list(exchangers.search_by_name(observer.name).keys())[0]
                     observer.set_changer_id(exchanger_id)    
                 except IndexError:
-                    logging.warning(f'This exchanger {observer.name} was not found') 
+                    logging.warning(f'This exchanger {observer.name} was not found')
+                    continue
+                except AttributeError:
+                    logging.error(f'Failed to load exchanger {observer.name} from BestChange API') #TODO
                     continue
             observer.update()
 
