@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+#TODO: Код по работе с гугл табличками вынеси в отдельный класс и лучше в отдельный файл
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
 CREDENTIALS_FILE = os.getenv('CREDENTIALS_FILE', 'secret.json')

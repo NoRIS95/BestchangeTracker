@@ -7,6 +7,7 @@ from managers import BestChangeManager
 from configs import SHEET_NAME, SPREADSHEET_ID, CREDENTIALS_FILE
 
 
+#TODO вынеси этот код в отдельную функцию и вызывай ее из main. Это нужно чтобы была едиинай точка входа в проект
 if __name__ == "__main__":
     rub = RUB()
     usdt = USDT()

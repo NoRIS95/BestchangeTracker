@@ -36,6 +36,7 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI = best_change_api
         self.__bestChangeAPI.load()
 
+        #TODO: передавай валюты в виде списка, можешь взять его из configs.py
         self.__Sova_unit = Sova(rub, usdt, ton, btc, xmr, eth, trx)
         self.__Netex_unit = NetEx24(rub, usdt, ton, btc, xmr, eth, trx)
         self.__Shahta_unit = Shahta(rub, usdt, ton, btc, xmr, eth, trx)
@@ -77,6 +78,10 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI.load()
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
+        #TODO оставь обработку исключения.
+        #TODO Настрой ротируемый лог, то есть чтобы сообщения выводились не в консоль а в файл.
+        #TODO Есть специальные либы для этого, погугли
+
         # exchangers, currencies = self.__bestChangeAPI.exchangers(), None  #в этой строчке искусственно создаю поводы для исключений
         # if exchangers is None or currencies is None:
         #     logging.error("Failed to load exchangers or currencies from BestChange API.") Оставить этот блок или оставить исключение (84-90)?

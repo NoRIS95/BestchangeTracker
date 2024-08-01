@@ -13,6 +13,8 @@ import logging
 
 load_dotenv()
 
+#TODO удали файл, он больше не нужен
+
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SHEET_NAME = os.getenv('SHEET_NAME')
 CREDENTIALS_FILE = os.getenv('CREDENTIALS_FILE', 'secret.json')

@@ -9,6 +9,8 @@ from collections import defaultdict
 from currencies import Currency
 from configs import *
 
+
+#TODO: Константы за пределами конфига, перенеси их туда
 CUR_RUB = 0
 CUR_USDT = 1
 CUR_TON = 2
