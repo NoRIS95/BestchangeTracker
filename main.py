@@ -1,3 +1,5 @@
+import asyncio
+
 from bestchange_api import BestChange
 
 from currencies import RUB, USDT
@@ -5,11 +7,11 @@ from currencies import TON, BTC, XMR, ETH, TRX
 from observers import GoogleSheetsObserver
 from managers import BestChangeManager
 from table import Table
-import asyncio
-
+from logger import setup_logger
 
 
 async def run_programm():
+    setup_logger()
     rub = RUB()
     usdt = USDT()
     ton = TON()

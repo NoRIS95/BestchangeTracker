@@ -1,10 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
 
 class Table:
+    load_dotenv()
     def __init__(self):
         self.__spreadsheet_id = os.getenv('SPREADSHEET_ID')
         self.__sheet_name = os.getenv('SHEET_NAME')
