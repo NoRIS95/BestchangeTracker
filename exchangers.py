@@ -1,8 +1,7 @@
 from decimal import Decimal
 
 from observers import IObserver, BestChangeUnit
-from currencies import Currency, RUB, USDT
-from currencies import TON, BTC, XMR, ETH, TRX
+from currencies import Currency, RUB, USDT, BTC, ETH
 from configs import EXCHANGES, EX_SOVA, EX_NETEX24, EX_SHAHTA, EX_FERMA
 
 class HiddenExchanger(IObserver):
@@ -27,26 +26,26 @@ class HiddenExchanger(IObserver):
         pass
 
 class Sova(BestChangeUnit):
-    def __init__(self, rub, usdt, ton, btc, xmr, eth, trx):
-        super().__init__([rub, usdt, ton, btc, xmr, eth, trx])
+    def __init__(self, list_currencies):
+        super().__init__(list_currencies)
         self.name = EXCHANGES[EX_SOVA]
 
 
 class NetEx24(BestChangeUnit):
-    def __init__(self, rub, usdt, ton, btc, xmr, eth, trx):
-        super().__init__([rub, usdt, ton, btc, xmr, eth, trx])
+    def __init__(self, list_currencies):
+        super().__init__(list_currencies)
         self.name = EXCHANGES[EX_NETEX24]
 
 
 class Shahta(BestChangeUnit):
-    def __init__(self, rub, usdt, ton, btc, xmr, eth, trx):
-        super().__init__([rub, usdt, ton, btc, xmr, eth, trx])
+    def __init__(self, list_currencies):
+        super().__init__(list_currencies)
         self.name = EXCHANGES[EX_SHAHTA]
 
 
 class Ferma(BestChangeUnit):
-    def __init__(self, rub, usdt, ton, btc, xmr, eth, trx):
-        super().__init__([rub, usdt, ton, btc, xmr, eth, trx])
+    def __init__(self, list_currencies):
+        super().__init__(list_currencies)
         self.name = EXCHANGES[EX_FERMA]
 
 class Baronex(HiddenExchanger):

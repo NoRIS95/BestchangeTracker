@@ -10,15 +10,6 @@ from currencies import Currency
 from configs import *
 
 
-#TODO: Константы за пределами конфига, перенеси их туда
-CUR_RUB = 0
-CUR_USDT = 1
-CUR_TON = 2
-CUR_BTC = 3
-CUR_XMR = 4
-CUR_ETH = 5
-CUR_TRX = 6
-
 class IObserver(ABC):
     @abstractmethod
     def update(self):
@@ -90,7 +81,7 @@ class BestChangeUnit(IObserver):
         
 
 class GoogleSheetsObserver(IObserver):
-    def __init__(self, sheet_name=SHEET_NAME, spreadsheet_id=SPREADSHEET_ID, credentials_file=CREDENTIALS_FILE):
+    def __init__(self, sheet_name, spreadsheet_id, credentials_file):
         self.sheet_name = sheet_name
         self.spreadsheet_id = spreadsheet_id
         self.sheet = SpreadsheetApp(credentials_file).open_by_id(spreadsheet_id=spreadsheet_id).get_sheet_by_name(sheet_name)
@@ -117,7 +108,7 @@ class GoogleSheetsObserver(IObserver):
             try:
                 exchanger_search_result = self.exchangers.search_by_name(exchanger_name)
             except AttributeError:
-                logging.error(f'Failed to search result of exchanger {exchanger_name} from BestChange API for get best rate')  #TODO
+                logging.error(f'Failed to search result of exchanger {exchanger_name} from BestChange API for get best rate')
                 return
             if exchanger_search_result:
                 exchanger_id = list(self.exchangers.search_by_name(exchanger_name).keys())[0]
@@ -129,7 +120,7 @@ class GoogleSheetsObserver(IObserver):
                 give_cur_ids = {cur['id'] for cur in self.currencies.search_by_name(give_currency_name).values() \
                             if (give_currency_name in cur['name'])}
             except:
-                logging.error(f'Failed to search getting currency or giving currency of exchanger {exchanger_name} from BestChange API for get best rate')  #TODO
+                logging.error(f'Failed to search getting currency or giving currency of exchanger {exchanger_name} from BestChange API for get best rate')
                 return
             rates = [r['rate'] for r in self.rates if r['exchange_id'] == exchanger_id and r['give_id'] \
                         in give_cur_ids and r['get_id'] in get_cur_ids]
@@ -161,13 +152,13 @@ class GoogleSheetsObserver(IObserver):
             try:
                 exchangers = {v['id']:v['name'] for v in self.exchangers.get().values()}
             except AttributeError:
-                logging.error('Failed to load exchangers from BestChange API for get top')   #TODO
+                logging.error('Failed to load exchangers from BestChange API for get top')
                 return
             normalized_prices = defaultdict(list)
             try:
                 currencies_dict = self.currencies.get()
             except AttributeError:
-                logging.error('Failed to load currencies from BestChange API for get top')  #TODO
+                logging.error('Failed to load currencies from BestChange API for get top')
                 return 
             actual_prices = {}
             for m in money_list:
@@ -218,7 +209,7 @@ class GoogleSheetsObserver(IObserver):
                         cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon))
                 row_ind_top += 1
         except TypeError:
-            logging.error('Failed to load top of exchanges from BestChange API')   #TODO
+            logging.error('Failed to load top of exchanges from BestChange API')
         for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
             value = fn(*args)
             if value is None:

@@ -1,4 +1,3 @@
-import cryptocompare
 import threading
 import logging
 import time
@@ -36,11 +35,10 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI = best_change_api
         self.__bestChangeAPI.load()
 
-        #TODO: передавай валюты в виде списка, можешь взять его из configs.py
-        self.__Sova_unit = Sova(rub, usdt, ton, btc, xmr, eth, trx)
-        self.__Netex_unit = NetEx24(rub, usdt, ton, btc, xmr, eth, trx)
-        self.__Shahta_unit = Shahta(rub, usdt, ton, btc, xmr, eth, trx)
-        self.__Ferma_unit = Ferma(rub, usdt, ton, btc, xmr, eth, trx)
+        self.__Sova_unit = Sova([rub, usdt, ton, btc, xmr, eth, trx])
+        self.__Netex_unit = NetEx24([rub, usdt, ton, btc, xmr, eth, trx])
+        self.__Shahta_unit = Shahta([rub, usdt, ton, btc, xmr, eth, trx])
+        self.__Ferma_unit = Ferma([rub, usdt, ton, btc, xmr, eth, trx])
         self.__observers = [self.__Shahta_unit, self.__Netex_unit, self.__Sova_unit, self.__Ferma_unit]
 
         self.__rub = rub
@@ -78,21 +76,14 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI.load()
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
-        #TODO оставь обработку исключения.
-        #TODO Настрой ротируемый лог, то есть чтобы сообщения выводились не в консоль а в файл.
-        #TODO Есть специальные либы для этого, погугли
-
-        # exchangers, currencies = self.__bestChangeAPI.exchangers(), None  #в этой строчке искусственно создаю поводы для исключений
-        # if exchangers is None or currencies is None:
-        #     logging.error("Failed to load exchangers or currencies from BestChange API.") Оставить этот блок или оставить исключение (84-90)?
-        #     return
+        # exchangers, currencies = None, None  #в этой строчке искусственно создаю поводы для исключений
         try:
             for currency in self.__cur_list:
                 cur_list = [cur for cur in currencies.search_by_name(currency.name).values()]
                 currency.update_naked_prices()
                 currency.set_currency_list(cur_list)
         except AttributeError:
-            logging.error("Failed to load currencies from BestChange API.")   #TODO
+            logging.error("Failed to load currencies from BestChange API.")
         for observer in self.__observers:
             observer.set_unit_chnges_rates(all_rates)
             if isinstance(observer, GoogleSheetsObserver):
@@ -106,7 +97,7 @@ class BestChangeManager(ISubject):
                     logging.warning(f'This exchanger {observer.name} was not found')
                     continue
                 except AttributeError:
-                    logging.error(f'Failed to load exchanger {observer.name} from BestChange API') #TODO
+                    logging.error(f'Failed to load exchanger {observer.name} from BestChange API')
                     continue
             observer.update()
 

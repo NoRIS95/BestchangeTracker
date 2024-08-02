@@ -1,8 +1,6 @@
 import cryptocompare
 
-#TODO: не забывай убирать не нужные импорты. Касается всех файлов.
-from abc import ABC, abstractmethod
-from bestchange_api import BestChange
+from abc import ABC
 from decimal import Decimal
 
 from configs import *

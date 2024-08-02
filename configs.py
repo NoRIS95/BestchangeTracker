@@ -1,13 +1,26 @@
 import os
-from dotenv import load_dotenv
+import logging
+from logging.handlers import RotatingFileHandler
 
-load_dotenv()
+LOG_DIR = 'logs'
+
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+LOG_FILE = os.path.join(LOG_DIR, 'debug.log')
+MAX_SIZE = 10 * 1024 * 1024  # 10 MB
+BACKUP_COUNT = 10
+
+handler = RotatingFileHandler(LOG_FILE, maxBytes=MAX_SIZE, backupCount=BACKUP_COUNT)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
 
 
-#TODO: Код по работе с гугл табличками вынеси в отдельный класс и лучше в отдельный файл
-SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
-SHEET_NAME = os.getenv('SHEET_NAME')
-CREDENTIALS_FILE = os.getenv('CREDENTIALS_FILE', 'secret.json')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+
+logger.handlers[0].doRollover()
 
 SLEEP_TIME_LOOP = 30
 
@@ -48,3 +61,12 @@ CASH_TYPE = 4
 OLD_NEW_TON_NAME = {"TON": "TONCOIN"}
 OLD_TON_NAME_NUM = 0
 NEW_TON_NAME_NUM = 1
+
+
+CUR_RUB = 0
+CUR_USDT = 1
+CUR_TON = 2
+CUR_BTC = 3
+CUR_XMR = 4
+CUR_ETH = 5
+CUR_TRX = 6
