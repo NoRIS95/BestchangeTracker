@@ -1,6 +1,7 @@
 import threading
 import logging
 import time
+import asyncio
 
 from abc import ABC, abstractmethod
 from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
@@ -52,6 +53,7 @@ class BestChangeManager(ISubject):
 
     def register_observer(self, observer: IObserver):
         self.__observers.append(observer)
+        # print('Зарегистрирован BestChangeManager')
 
     def remove_observer(self, observer: IObserver):
         self.__observers.remove(observer)
@@ -102,7 +104,7 @@ class BestChangeManager(ISubject):
             observer.update()
 
 
-    def start_updates(self, interval: int = 5):
+    async def start_updates(self, interval: int = 5):
         def run_updates():
             while True:
                 self.notify_observers()

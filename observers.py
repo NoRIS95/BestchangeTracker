@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 import cryptocompare
+import asyncio
 
 from sheetfu import SpreadsheetApp
 from abc import ABC, abstractmethod
@@ -90,12 +91,12 @@ class GoogleSheetsObserver(IObserver):
         self.rates = None
 
 
-    def update(self):
+    async def async_update(self):
         cell_callbacks = {}
 
         all_currencies_list = [OLD_NEW_TON_NAME.get(c,c) for c in CRYPTOS_LIST] + FIATS_LIST
 
-        actual_prices = cryptocompare.get_price(all_currencies_list, all_currencies_list)
+        actual_prices = await asyncio.to_thread(cryptocompare.get_price, all_currencies_list, all_currencies_list)
 
         def get_actual_price(get_currency_name, give_currency_name):
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
@@ -143,10 +144,19 @@ class GoogleSheetsObserver(IObserver):
                 col_ind += 1
             row_ind += 1
 
-
+        # async def get_data_range():
+        #     return self.sheet.get_range_from_a1('C5:P35')
+        
+        # async def get_backgrounds_data_range(data_range):
+        #     return data_range.get_backgrounds()
+        
+        # async def get_values_data_range(data_range):
+        #     return data_range.get_values()
+        
         data_range = self.sheet.get_range_from_a1('C5:P35')
         backgrounds = data_range.get_backgrounds()
         values = data_range.get_values()
+        
         
         def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
             try:
@@ -211,12 +221,15 @@ class GoogleSheetsObserver(IObserver):
         except TypeError:
             logging.error('Failed to load top of exchanges from BestChange API')
         for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
-            value = fn(*args)
+            value = await asyncio.to_thread(fn, *args)  # Вызов функции в отдельном потоке
             if value is None:
                 value = '-'
             values[row_ind][col_ind] = value
         data_range.set_values(values)
         data_range.set_backgrounds(backgrounds)
+
+    def update(self):
+        asyncio.run(self.async_update())
                 
     def set_unit_chnges_rates(self, rates):
         self.rates = rates
