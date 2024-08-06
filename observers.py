@@ -2,6 +2,7 @@ import numpy as np
 import logging
 import cryptocompare
 import asyncio
+import time
 
 from sheetfu import SpreadsheetApp
 from abc import ABC, abstractmethod
@@ -48,12 +49,27 @@ class BestChangeUnit(IObserver):
         self.__all_unit_rates = rates
         self.__self_unit_rates = [r for r in self.__all_unit_rates if r['exchange_id'] == self.changer_id]
 
-    def update_rates(self, currencies):
+    
+    async def async_update_rates(self, currencies):
+        async def async_set_naked_price_rub(cur,currency):
+            return cur.set_naked_price_rub(currency.get_naked_price_rub())
+    
+        async def async_set_naked_price_usdt(cur,currency):
+            return cur.set_naked_price_usdt(currency.get_naked_price_usdt())
+        
         for currency in currencies:
             currency: Currency
             cur: Currency = self.currencies_dict[currency.name]
-            cur.set_naked_price_rub(currency.get_naked_price_rub())
-            cur.set_naked_price_usdt(currency.get_naked_price_usdt())
+            task_async_set_naked_price_rub = asyncio.create_task(async_set_naked_price_rub(cur,currency))
+            task_async_set_naked_price_usdt = asyncio.create_task(async_set_naked_price_usdt(cur,currency))
+            await task_async_set_naked_price_rub
+            await task_async_set_naked_price_usdt
+            # await asyncio.gather(task_async_set_naked_price_rub, task_async_set_naked_price_usdt)
+
+
+    def update_rates(self, currencies):
+        asyncio.run(self.async_update_rates(currencies))
+
 
     def __str__(self):
         ret_str = f"{self.name}\n"
@@ -95,15 +111,19 @@ class GoogleSheetsObserver(IObserver):
         cell_callbacks = {}
 
         all_currencies_list = [OLD_NEW_TON_NAME.get(c,c) for c in CRYPTOS_LIST] + FIATS_LIST
-
         actual_prices = await asyncio.to_thread(cryptocompare.get_price, all_currencies_list, all_currencies_list)
 
         def get_actual_price(get_currency_name, give_currency_name):
+            start = time.time()
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
-            return actual_prices[get_currency_name][give_currency_name]
+            actual_price = actual_prices[get_currency_name][give_currency_name]
+            end = time.time()
+            print(f'Время выполнения get_actual_price: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
+            return actual_price
         
         def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str):
+            start = time.time()
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
             try:
@@ -128,9 +148,11 @@ class GoogleSheetsObserver(IObserver):
             if len(rates) == 0:
                 return
             best_rate = min(rates)
+            end = time.time()
+            print(f'Время выполнения get_best_rate: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return best_rate
 
-
+        start = time.time()
         row_ind = 0
         for cript in CRYPTOS_LIST:
             col_ind = 0
@@ -144,21 +166,23 @@ class GoogleSheetsObserver(IObserver):
                 col_ind += 1
             row_ind += 1
 
-        # async def get_data_range():
-        #     return self.sheet.get_range_from_a1('C5:P35')
+        async def get_data_range():
+            return self.sheet.get_range_from_a1('C5:P35')
         
-        # async def get_backgrounds_data_range(data_range):
-        #     return data_range.get_backgrounds()
+        async def get_backgrounds_data_range(data_range):
+            return data_range.get_backgrounds()
         
-        # async def get_values_data_range(data_range):
-        #     return data_range.get_values()
+        async def get_values_data_range(data_range):
+            return data_range.get_values()
         
-        data_range = self.sheet.get_range_from_a1('C5:P35')
-        backgrounds = data_range.get_backgrounds()
-        values = data_range.get_values()
+        task_data_range = asyncio.create_task(get_data_range())
+        data_range = await task_data_range
+        backgrounds, values = await asyncio.gather(get_backgrounds_data_range(data_range), get_values_data_range(data_range))
         
         
-        def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
+        
+        async def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
+            start = time.time()
             try:
                 exchangers = {v['id']:v['name'] for v in self.exchangers.get().values()}
             except AttributeError:
@@ -203,9 +227,12 @@ class GoogleSheetsObserver(IObserver):
             exchanger_ranks = {exchanger_name:np.mean(exchanger_prices_norm) \
                 for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
             exchangers = [e for e in exchanger_ranks]
-            return list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
+            list_top_exchangers = list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
+            end = time.time()
+            print(f'Время выполнения get_top: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
+            return list_top_exchangers
 
-        top_exchanges = get_top()
+        top_exchanges = await get_top()
 
 
         row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
@@ -227,7 +254,8 @@ class GoogleSheetsObserver(IObserver):
             values[row_ind][col_ind] = value
         data_range.set_values(values)
         data_range.set_backgrounds(backgrounds)
-
+        end = time.time()
+        print(f'Время заполнения таблицы: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
     def update(self):
         asyncio.run(self.async_update())
                 

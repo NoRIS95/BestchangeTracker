@@ -34,8 +34,7 @@ class CryptocompareManager(ISubject):
 class BestChangeManager(ISubject):
     def __init__(self, best_change_api, rub, usdt, ton, btc, xmr, eth, trx):
         self.__bestChangeAPI = best_change_api
-        self.__bestChangeAPI.load()
-
+        
         self.__Sova_unit = Sova([rub, usdt, ton, btc, xmr, eth, trx])
         self.__Netex_unit = NetEx24([rub, usdt, ton, btc, xmr, eth, trx])
         self.__Shahta_unit = Shahta([rub, usdt, ton, btc, xmr, eth, trx])
@@ -53,7 +52,6 @@ class BestChangeManager(ISubject):
 
     def register_observer(self, observer: IObserver):
         self.__observers.append(observer)
-        # print('Зарегистрирован BestChangeManager')
 
     def remove_observer(self, observer: IObserver):
         self.__observers.remove(observer)
@@ -75,7 +73,10 @@ class BestChangeManager(ISubject):
         raise NotImplemented
 
     def notify_observers(self):
+        start = time.time()
         self.__bestChangeAPI.load()
+        end = time.time()
+        print(f'Время загрузки self.__bestChangeAPI.load(): {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
         # exchangers, currencies = None, None  #в этой строчке искусственно создаю поводы для исключений
