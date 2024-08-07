@@ -11,6 +11,8 @@ import concurrent.futures
 import asyncio
 
 
+
+
 def creation_date(path_to_file):
     if platform.system() == 'Windows':
         return os.path.getctime(path_to_file)
@@ -338,8 +340,11 @@ class BestChange:
 
 
 async def main():
+    start = time.time()
     proxy = None
     api = BestChange(cache_seconds=30, exchangers_reviews=False, split_reviews=False, ssl=False, proxy=proxy, daemon=True)
+    end = time.time()
+    print(f'Время выполнения get_bestchangeapi: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
 
     print('Starting download')
     api.load()
@@ -362,3 +367,9 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
+
+#     start = time.time()
+#     best_change_api = BestChange(cache=True, ssl=False, cache_path='./', exchangers_reviews=False, cache_seconds=30)
+#     end = time.time()
+#     print(f'Время выполнения get_bestchangeapi: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах

@@ -15,12 +15,12 @@ async def call_best_change_manager(best_change_api, rub, usdt, ton, btc, xmr, et
 async def call_googlesheetsobserver(sheet_name, spreadsheet_id, credentials_file):
     return GoogleSheetsObserver(sheet_name, spreadsheet_id, credentials_file)
 
-async def get_bestchangeapi():
-    start = time.time()
-    best_change_api = BestChange(cache=True, ssl=False, cache_path='./', exchangers_reviews=False, cache_seconds=30)
-    end = time.time()
-    print(f'Время выполнения get_bestchangeapi: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
-    return best_change_api
+# async def get_bestchangeapi():
+#     start = time.time()
+#     best_change_api = BestChange(cache=True, ssl=False, cache_path='./', exchangers_reviews=False, cache_seconds=30)
+#     end = time.time()
+#     print(f'Время выполнения get_bestchangeapi: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
+#     return best_change_api
 
 async def create_currencies_and_table():
     rub = RUB()

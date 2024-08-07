@@ -114,16 +114,12 @@ class GoogleSheetsObserver(IObserver):
         actual_prices = await asyncio.to_thread(cryptocompare.get_price, all_currencies_list, all_currencies_list)
 
         def get_actual_price(get_currency_name, give_currency_name):
-            start = time.time()
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
             actual_price = actual_prices[get_currency_name][give_currency_name]
-            end = time.time()
-            print(f'Время выполнения get_actual_price: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return actual_price
         
         def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str):
-            start = time.time()
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
             try:
@@ -148,11 +144,9 @@ class GoogleSheetsObserver(IObserver):
             if len(rates) == 0:
                 return
             best_rate = min(rates)
-            end = time.time()
-            print(f'Время выполнения get_best_rate: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return best_rate
 
-        start = time.time()
+
         row_ind = 0
         for cript in CRYPTOS_LIST:
             col_ind = 0
@@ -182,7 +176,6 @@ class GoogleSheetsObserver(IObserver):
         
         
         async def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
-            start = time.time()
             try:
                 exchangers = {v['id']:v['name'] for v in self.exchangers.get().values()}
             except AttributeError:
@@ -228,8 +221,6 @@ class GoogleSheetsObserver(IObserver):
                 for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
             exchangers = [e for e in exchanger_ranks]
             list_top_exchangers = list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
-            end = time.time()
-            print(f'Время выполнения get_top: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return list_top_exchangers
 
         top_exchanges = await get_top()
@@ -254,8 +245,7 @@ class GoogleSheetsObserver(IObserver):
             values[row_ind][col_ind] = value
         data_range.set_values(values)
         data_range.set_backgrounds(backgrounds)
-        end = time.time()
-        print(f'Время заполнения таблицы: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
+
     def update(self):
         asyncio.run(self.async_update())
                 

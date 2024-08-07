@@ -73,10 +73,7 @@ class BestChangeManager(ISubject):
         raise NotImplemented
 
     def notify_observers(self):
-        start = time.time()
-        self.__bestChangeAPI.load()
-        end = time.time()
-        print(f'Время загрузки self.__bestChangeAPI.load(): {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
+        self.__bestChangeAPI
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
         # exchangers, currencies = None, None  #в этой строчке искусственно создаю поводы для исключений
