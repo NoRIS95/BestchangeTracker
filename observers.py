@@ -2,10 +2,12 @@ import numpy as np
 import logging
 import cryptocompare
 import asyncio
-import pygsheets
+import time
 
+from sheetfu import SpreadsheetApp
 from abc import ABC, abstractmethod
 from collections import defaultdict
+
 from currencies import Currency
 from configs import *
 
@@ -91,8 +93,7 @@ class GoogleSheetsObserver(IObserver):
     def __init__(self, sheet_name, spreadsheet_id, credentials_file):
         self.sheet_name = sheet_name
         self.spreadsheet_id = spreadsheet_id
-        self.gc = pygsheets.authorize(service_file=credentials_file)
-        self.sheet = self.gc.open_by_key(spreadsheet_id).worksheet_by_title(sheet_name)
+        self.sheet = SpreadsheetApp(credentials_file).open_by_id(spreadsheet_id=spreadsheet_id).get_sheet_by_name(sheet_name)
         self.exchangers = None
         self.currencies = None
         self.rates = None
@@ -149,10 +150,21 @@ class GoogleSheetsObserver(IObserver):
                 col_ind += 1
             row_ind += 1
 
-        data_range = self.sheet.get_values(start='C5', end='P35', include_tailing_empty=True, returnas='range')
-        values = data_range.cells
+        async def get_data_range():
+            return self.sheet.get_range_from_a1('C5:P35')
+        
+        async def get_backgrounds_data_range(data_range):
+            return data_range.get_backgrounds()
+        
+        async def get_values_data_range(data_range):
+            return data_range.get_values()
+        
+        task_data_range = asyncio.create_task(get_data_range())
+        data_range = await task_data_range
+        backgrounds, values = await asyncio.gather(get_backgrounds_data_range(data_range), get_values_data_range(data_range))
 
         async def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
+            start = time.time()
             try:
                 exchangers = {v['id']: v['name'] for v in self.exchangers.get().values()}
             except AttributeError:
@@ -198,10 +210,11 @@ class GoogleSheetsObserver(IObserver):
                                for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
             exchangers = [e for e in exchanger_ranks]
             list_top_exchangers = list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
+            end = time.time()
+            print(f'Время загрузки get_top: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return list_top_exchangers
 
-        task_top_exchanges = asyncio.create_task(get_top())
-        top_exchanges = await task_top_exchanges
+        top_exchanges = await get_top()
 
         row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
         try:
@@ -219,7 +232,8 @@ class GoogleSheetsObserver(IObserver):
         for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
             tasks.append(asyncio.create_task(self.update_cell(values, row_ind, col_ind, fn, args)))
         await asyncio.gather(*tasks)
-        self.sheet.update_values('C5:P35', [[cell.value for cell in row] for row in values])
+        data_range.set_values(values)
+        data_range.set_backgrounds(backgrounds)
 
     async def update_cell(self, values, row_ind, col_ind, fn, args):
         result = fn(*args)
@@ -230,12 +244,12 @@ class GoogleSheetsObserver(IObserver):
         if value is None:
             value = '-'
         if row_ind < len(values) and col_ind < len(values[row_ind]):
-            values[row_ind][col_ind].value = value
+            values[row_ind][col_ind] = value
         else:
             logging.error(f"Index out of range: row {row_ind}, col {col_ind}")
 
     async def update(self):
-        await asyncio.create_task(self.async_update())
+        await self.async_update()
 
     def set_unit_chnges_rates(self, rates):
         self.rates = rates

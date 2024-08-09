@@ -1,16 +1,16 @@
-import threading
 import logging
-import time
 import asyncio
+
 from abc import ABC, abstractmethod
 from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
 from exchangers import Sova, NetEx24, Shahta, Ferma
-from currencies import FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
+from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
+
 
 
 class ISubject(ABC):
     @abstractmethod
-    async def register_observer(self, observer: IObserver):
+    def register_observer(self, observer: IObserver):
         pass
 
     @abstractmethod
@@ -40,7 +40,7 @@ class BestChangeManager(ISubject):
         self.__trx = trx
         self.__cur_list = [self.__rub, self.__usdt, self.__ton, self.__btc, self.__xmr, self.__eth, self.__trx]
 
-    async def register_observer(self, observer: IObserver):
+    def register_observer(self, observer: IObserver):
         self.__observers.append(observer)
 
     def remove_observer(self, observer: IObserver):
