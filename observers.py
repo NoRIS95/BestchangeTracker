@@ -105,6 +105,7 @@ class GoogleSheetsObserver(IObserver):
         self.exchangers = None
         self.currencies = None
         self.rates = None
+        self.best_rate_cache = {}
 
 
     async def async_update(self):
@@ -120,6 +121,9 @@ class GoogleSheetsObserver(IObserver):
             return actual_price
         
         def get_best_rate(exchanger_name: str, get_currency_name: str, give_currency_name: str):
+            cache_key = (exchanger_name, get_currency_name, give_currency_name)
+            if cache_key in self.best_rate_cache:
+                return self.best_rate_cache[cache_key]
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
             try:
@@ -142,8 +146,9 @@ class GoogleSheetsObserver(IObserver):
             rates = [r['rate'] for r in self.rates if r['exchange_id'] == exchanger_id and r['give_id'] \
                         in give_cur_ids and r['get_id'] in get_cur_ids]
             if len(rates) == 0:
-                return
+                return None
             best_rate = min(rates)
+            self.best_rate_cache[cache_key] = best_rate
             return best_rate
 
         async def write_table_actual_prices():
@@ -239,7 +244,8 @@ class GoogleSheetsObserver(IObserver):
             except TypeError:
                 logging.error('Failed to load top of exchanges from BestChange API')
             for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
-                value = await asyncio.to_thread(fn, *args)  # Вызов функции в отдельном потоке
+                # value = await asyncio.to_thread(fn, *args)  # Вызов функции в отдельном потоке
+                value = fn(*args)
                 if value is None:
                     value = '-'
                 values[row_ind][col_ind] = value
