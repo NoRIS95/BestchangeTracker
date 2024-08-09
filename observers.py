@@ -146,19 +146,19 @@ class GoogleSheetsObserver(IObserver):
             best_rate = min(rates)
             return best_rate
 
-
-        row_ind = 0
-        for cript in CRYPTOS_LIST:
-            col_ind = 0
-            for exchange in ['Биржа'] + EXCHANGES:
-                for money in FIATS_LIST_PRICES:
-                    if exchange == "Биржа":
-                        cell_callbacks[(row_ind, col_ind)] = (get_actual_price, (cript, money))
-                    else:
-                        cell_callbacks[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money))
+        async def write_table_actual_prices():
+            row_ind = 0
+            for cript in CRYPTOS_LIST:
+                col_ind = 0
+                for exchange in ['Биржа'] + EXCHANGES:
+                    for money in FIATS_LIST_PRICES:
+                        if exchange == "Биржа":
+                            cell_callbacks[(row_ind, col_ind)] = (get_actual_price, (cript, money))
+                        else:
+                            cell_callbacks[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money))
+                        col_ind += 1
                     col_ind += 1
-                col_ind += 1
-            row_ind += 1
+                row_ind += 1
 
         async def get_data_range():
             return self.sheet.get_range_from_a1('C5:P35')
@@ -225,26 +225,30 @@ class GoogleSheetsObserver(IObserver):
 
         top_exchanges = await get_top()
 
+        async def write_table_top():
+            row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
+            try:
+                for exch in top_exchanges:
+                    col_ind_top = 0
+                    cell_callbacks[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
+                    for cr in CRYPTOS_LIST:
+                        for mon in FIATS_LIST_TOP:
+                            col_ind_top += 1
+                            cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon))
+                    row_ind_top += 1
+            except TypeError:
+                logging.error('Failed to load top of exchanges from BestChange API')
+            for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
+                value = await asyncio.to_thread(fn, *args)  # Вызов функции в отдельном потоке
+                if value is None:
+                    value = '-'
+                values[row_ind][col_ind] = value
+            data_range.set_values(values)
+            data_range.set_backgrounds(backgrounds)
 
-        row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
-        try:
-            for exch in top_exchanges:
-                col_ind_top = 0
-                cell_callbacks[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
-                for cr in CRYPTOS_LIST:
-                    for mon in FIATS_LIST_TOP:
-                        col_ind_top += 1
-                        cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon))
-                row_ind_top += 1
-        except TypeError:
-            logging.error('Failed to load top of exchanges from BestChange API')
-        for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
-            value = await asyncio.to_thread(fn, *args)  # Вызов функции в отдельном потоке
-            if value is None:
-                value = '-'
-            values[row_ind][col_ind] = value
-        data_range.set_values(values)
-        data_range.set_backgrounds(backgrounds)
+        task_table_actual_prices = asyncio.create_task(write_table_actual_prices())
+        task_table_top = asyncio.create_task(write_table_top())
+        await asyncio.gather(task_table_actual_prices, task_table_top)
 
     def update(self):
         asyncio.run(self.async_update())
