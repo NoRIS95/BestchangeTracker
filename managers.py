@@ -2,16 +2,15 @@ import threading
 import logging
 import time
 import asyncio
-
 from abc import ABC, abstractmethod
 from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
 from exchangers import Sova, NetEx24, Shahta, Ferma
-from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
+from currencies import FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
 
 
 class ISubject(ABC):
     @abstractmethod
-    def register_observer(self, observer: IObserver):
+    async def register_observer(self, observer: IObserver):
         pass
 
     @abstractmethod
@@ -19,17 +18,8 @@ class ISubject(ABC):
         pass
 
     @abstractmethod
-    def notify_observers(self):
+    async def notify_observers(self):
         pass
-
-class CryptocompareManager(ISubject):
-    def __init__(self, crypt_list, currency_list):
-        self.cript_list = crypt_list
-        self.currency_list = currency_list
-        self.cript_dict = make_cript_dict_cryptocompare()
-    
-    def register_observer(self, observer: IObserver):
-        self.__observers.append(observer)
 
 class BestChangeManager(ISubject):
     def __init__(self, best_change_api, rub, usdt, ton, btc, xmr, eth, trx):
@@ -50,7 +40,7 @@ class BestChangeManager(ISubject):
         self.__trx = trx
         self.__cur_list = [self.__rub, self.__usdt, self.__ton, self.__btc, self.__xmr, self.__eth, self.__trx]
 
-    def register_observer(self, observer: IObserver):
+    async def register_observer(self, observer: IObserver):
         self.__observers.append(observer)
 
     def remove_observer(self, observer: IObserver):
@@ -65,18 +55,12 @@ class BestChangeManager(ISubject):
         usdt_ids = [cur['id'] for cur in self.__bestChangeAPI.currencies().search_by_name((CRYPTOS_LIST[CRYPTO_USDT])).values()\
                     if cur['name'] in USDT_PROTOCOLS]
         return usdt_ids
-    
-    def set_exchangers(self):
-        raise NotImplemented
 
-    def set_currencies(self):
-        raise NotImplemented
-
-    def notify_observers(self):
-        self.__bestChangeAPI
+    async def notify_observers(self):
+        await self.__bestChangeAPI.load()
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
-        # exchangers, currencies = None, None  #в этой строчке искусственно создаю поводы для исключений
+        
         try:
             for currency in self.__cur_list:
                 cur_list = [cur for cur in currencies.search_by_name(currency.name).values()]
@@ -84,6 +68,8 @@ class BestChangeManager(ISubject):
                 currency.set_currency_list(cur_list)
         except AttributeError:
             logging.error("Failed to load currencies from BestChange API.")
+        
+        tasks = []
         for observer in self.__observers:
             observer.set_unit_chnges_rates(all_rates)
             if isinstance(observer, GoogleSheetsObserver):
@@ -92,33 +78,28 @@ class BestChangeManager(ISubject):
             else:
                 try:
                     exchanger_id = list(exchangers.search_by_name(observer.name).keys())[0]
-                    observer.set_changer_id(exchanger_id)    
+                    observer.set_changer_id(exchanger_id)
                 except IndexError:
                     logging.warning(f'This exchanger {observer.name} was not found')
                     continue
                 except AttributeError:
                     logging.error(f'Failed to load exchanger {observer.name} from BestChange API')
                     continue
-            observer.update()
-
+            tasks.append(asyncio.create_task(observer.update()))
+        
+        await asyncio.gather(*tasks)
 
     async def start_updates(self, interval: int = 5):
-        def run_updates():
-            while True:
-                self.notify_observers()
-                time.sleep(interval)
+        while True:
+            await self.notify_observers()
+            await asyncio.sleep(interval)
 
-        thread = threading.Thread(target=run_updates)
-        thread.daemon = True
-        thread.start()
-        return thread
-        
     def __str__(self):
         ret_str = ""
         for b_c_unin in self.__observers:
             ret_str += (b_c_unin.__str__() + "\n")
         return ret_str
 
-    def get_rate(self, curr_client_give:str, cur_client_get:str):
+    def get_rate(self, curr_client_give: str, cur_client_get: str):
         for changers in self.__observers:
             changers.get_rate(curr_client_give, cur_client_get)

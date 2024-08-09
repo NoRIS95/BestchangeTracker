@@ -1,14 +1,16 @@
-from io import TextIOWrapper
-from zipfile import ZipFile
-from urllib.request import urlretrieve, ProxyHandler, build_opener, install_opener
 import os
 import platform
 import time
-from itertools import groupby
 import ssl as sslib
 import threading
 import concurrent.futures
 import asyncio
+import aiohttp
+
+from io import TextIOWrapper
+from zipfile import ZipFile
+from urllib.request import urlretrieve, ProxyHandler, build_opener, install_opener
+from itertools import groupby
 
 
 
@@ -187,7 +189,7 @@ class BestChange:
                  cache_path='./',
                  exchangers_reviews=False,
                  split_reviews=False,
-                 ssl=False,
+                 ssl=True,
                  proxy=None,
                  daemon=False):
         """
@@ -221,13 +223,25 @@ class BestChange:
             # Отключаем проверку сертификата, так как BC его не выпустил для этой страницы
             # ssl._create_default_https_context = ssl._create_unverified_context
             # self.__url = self.__url.replace('http', 'https')
-            sslib._create_default_https_context = sslib._create_unverified_context
+            # sslib._create_default_https_context = sslib._create_unverified_context    #TODO make block if
             self.__url = self.__url.replace('http', 'https')
 
+    async def fetch(self, session, url, file_path):
+        async with session.get(url, ssl=True) as response:
+            if response.status == 200:
+                with open(file_path, 'wb') as f:
+                    while True:
+                        chunk = await response.content.read(1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            else:
+                raise Exception(f"Failed to download file from {url}, status code: {response.status}")
+    
     async def load(self):
         if self.__daemon:
             self.__executor.submit(self._run_infinite_load)
-            import time; time.sleep(40)
+            await asyncio.sleep(40)
         else:
             future = self.__executor.submit(self._download_and_extract)
             return asyncio.wrap_future(future)
@@ -347,7 +361,7 @@ async def main():
     print(f'Время выполнения get_bestchangeapi: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
 
     print('Starting download')
-    api.load()
+    await api.load()
     
     print('Download completed')
 
