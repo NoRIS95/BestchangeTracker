@@ -20,6 +20,10 @@ async def run_programm():
     google_sheets_observer = await task_google_sheets_observer
     
     change_manager.register_observer(google_sheets_observer)
+    # change_manager.notify_observers()
+    
+    # updates_daemon = await change_manager.start_updates() # Continuous update 
+    # updates_daemon.join()
     await change_manager.start_updates()
 
 if __name__ == "__main__":

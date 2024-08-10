@@ -3,8 +3,9 @@ import logging
 import cryptocompare
 import asyncio
 import time
+import gspread_asyncio
 
-from sheetfu import SpreadsheetApp
+from google.oauth2.service_account import Credentials
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
@@ -14,7 +15,7 @@ from configs import *
 
 class IObserver(ABC):
     @abstractmethod
-    def update(self):
+    async def update(self):
         pass
 
 class BestChangeUnit(IObserver):
@@ -29,8 +30,8 @@ class BestChangeUnit(IObserver):
         self.__xmr = currencies[CUR_XMR]
         self.__eth = currencies[CUR_ETH]
         self.__trx = currencies[CUR_TRX]
-        self.__all_unit_rates = []
-        self.__self_unit_rates = []
+        self.__all_unit_rates = []  # Список всех состояний обмена со всех обменников
+        self.__self_unit_rates = []  # Список состояний обмена, только данного обменника
 
         self.currencies_dict = {
             CRYPTOS_LIST[CRYPTO_USDT]: self.__usdt,
@@ -93,12 +94,21 @@ class GoogleSheetsObserver(IObserver):
     def __init__(self, sheet_name, spreadsheet_id, credentials_file):
         self.sheet_name = sheet_name
         self.spreadsheet_id = spreadsheet_id
-        self.sheet = SpreadsheetApp(credentials_file).open_by_id(spreadsheet_id=spreadsheet_id).get_sheet_by_name(sheet_name)
+        self.credentials_file = credentials_file
         self.exchangers = None
         self.currencies = None
         self.rates = None
+        self.agcm = gspread_asyncio.AsyncioGspreadClientManager(self.get_creds)
+
+    def get_creds(self):
+        creds = Credentials.from_service_account_file(self.credentials_file, scopes=["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"])
+        return creds
 
     async def async_update(self):
+        agc = await self.agcm.authorize()
+        spreadsheet = await agc.open_by_key(self.spreadsheet_id)
+        sheet = await spreadsheet.worksheet(self.sheet_name)
+
         cell_callbacks = {}
 
         all_currencies_list = [OLD_NEW_TON_NAME.get(c, c) for c in CRYPTOS_LIST] + FIATS_LIST
@@ -150,18 +160,8 @@ class GoogleSheetsObserver(IObserver):
                 col_ind += 1
             row_ind += 1
 
-        async def get_data_range():
-            return self.sheet.get_range_from_a1('C5:P35')
-        
-        async def get_backgrounds_data_range(data_range):
-            return data_range.get_backgrounds()
-        
-        async def get_values_data_range(data_range):
-            return data_range.get_values()
-        
-        task_data_range = asyncio.create_task(get_data_range())
-        data_range = await task_data_range
-        backgrounds, values = await asyncio.gather(get_backgrounds_data_range(data_range), get_values_data_range(data_range))
+        data_range = await sheet.range('C5:P35')
+        values = await sheet.get('C5:P35')
 
         async def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
             start = time.time()
@@ -230,10 +230,9 @@ class GoogleSheetsObserver(IObserver):
             logging.error('Failed to load top of exchanges from BestChange API')
         tasks = []
         for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
-            tasks.append(asyncio.create_task(self.update_cell(values, row_ind, col_ind, fn, args)))
+            tasks.append(self.update_cell(values, row_ind, col_ind, fn, args))
         await asyncio.gather(*tasks)
-        data_range.set_values(values)
-        data_range.set_backgrounds(backgrounds)
+        await sheet.update('C5:P35', values)
 
     async def update_cell(self, values, row_ind, col_ind, fn, args):
         result = fn(*args)

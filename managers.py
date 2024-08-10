@@ -1,11 +1,9 @@
 import logging
 import asyncio
-
 from abc import ABC, abstractmethod
 from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
 from exchangers import Sova, NetEx24, Shahta, Ferma
-from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
-
+from currencies import FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
 
 
 class ISubject(ABC):
