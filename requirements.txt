@@ -3,4 +3,4 @@ cryptocompare==0.7.6
 numpy==1.26.3
 python-dotenv==1.0.1
 requests==2.31.0
-sheetfu==1.6.1
+pygsheets==2.0.6
