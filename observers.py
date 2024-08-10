@@ -2,7 +2,6 @@ import numpy as np
 import logging
 import cryptocompare
 import asyncio
-import time
 
 from sheetfu import SpreadsheetApp
 from abc import ABC, abstractmethod
@@ -115,8 +114,6 @@ class GoogleSheetsObserver(IObserver):
             cache_key = (exchanger_name, get_currency_name, give_currency_name)
             if cache_key in self.best_rate_cache:
                 return self.best_rate_cache[cache_key]
-
-            start = time.time()
             get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
             give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
             try:
@@ -142,8 +139,6 @@ class GoogleSheetsObserver(IObserver):
                 return None
             best_rate = min(rates)
             self.best_rate_cache[cache_key] = best_rate
-            end = time.time()
-            print(f'Время get_best_rate: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return best_rate
 
         async def write_table_actual_prices():
@@ -174,7 +169,6 @@ class GoogleSheetsObserver(IObserver):
         backgrounds, values = await asyncio.gather(get_backgrounds_data_range(data_range), get_values_data_range(data_range))
 
         async def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
-            start = time.time()
             try:
                 exchangers = {v['id']: v['name'] for v in self.exchangers.get().values()}
             except AttributeError:
@@ -201,8 +195,6 @@ class GoogleSheetsObserver(IObserver):
                                for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
             exchangers = [e for e in exchanger_ranks]
             list_top_exchangers = list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
-            end = time.time()
-            print(f'Время загрузки get_top: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
             return list_top_exchangers
 
         async def process_rate(rate, exchangers, currencies_dict, normalized_prices, actual_prices, money_list, cript_list):
@@ -233,8 +225,6 @@ class GoogleSheetsObserver(IObserver):
         top_exchanges = await get_top()
 
         async def write_table_top():
-            print('Вызов write_table_top')
-            start = time.time()
             row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
             try:
                 for exch in top_exchanges:
@@ -254,8 +244,6 @@ class GoogleSheetsObserver(IObserver):
                 values[row_ind][col_ind] = value
             data_range.set_values(values)
             data_range.set_backgrounds(backgrounds)
-            end = time.time()
-            print(f'Время write_table_top: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
 
         task_table_actual_prices = asyncio.create_task(write_table_actual_prices())
         task_table_top = asyncio.create_task(write_table_top())

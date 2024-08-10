@@ -1,11 +1,8 @@
 import os
 import platform
 import time
-import ssl as sslib
-import threading
 import concurrent.futures
 import asyncio
-import aiohttp
 
 from io import TextIOWrapper
 from zipfile import ZipFile
