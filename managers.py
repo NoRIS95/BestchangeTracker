@@ -1,7 +1,6 @@
 import threading
 import logging
 import time
-import asyncio
 
 from abc import ABC, abstractmethod
 from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB

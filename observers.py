@@ -2,7 +2,6 @@ import numpy as np
 import logging
 import cryptocompare
 import asyncio
-import time
 
 from sheetfu import SpreadsheetApp
 from abc import ABC, abstractmethod

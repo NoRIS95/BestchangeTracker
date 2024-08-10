@@ -6,7 +6,6 @@ import platform
 import time
 from itertools import groupby
 import ssl as sslib
-import threading
 import concurrent.futures
 import asyncio
 
