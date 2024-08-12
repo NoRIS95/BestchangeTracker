@@ -1,3 +1,26 @@
+import os
+import enum
+
+from dotenv import load_dotenv, find_dotenv
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
+from simplejsondb import Database
+from api import BestChange
+
+BEST_CHANGE_API = BestChange(cache_seconds=45, exchangers_reviews=False, split_reviews=False, ssl=False, daemon=True)
+load_dotenv()
+TG_TOKEN = os.getenv('BOT_TOKEN')
+ADMIN_ID = os.getenv('ADMIN_ID')
+bot = Bot(token=TG_TOKEN)
+dp = Dispatcher(bot)
+
+USER_CONDITIONS = Database('user_states.json', default=dict())
+
+class StatusDialog(enum.Enum):
+    STATUS_OF_GREEЕTINGS = 1
+    STATUS_INFO = 2
+    STATUS_OF_ASK_CRIPT = 3
+
 LOG_DIR = 'logs'
 
 SLEEP_TIME_LOOP = 30

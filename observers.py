@@ -3,7 +3,6 @@ import logging
 import cryptocompare
 import asyncio
 
-from sheetfu import SpreadsheetApp
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
@@ -88,18 +87,18 @@ class BestChangeUnit(IObserver):
         rate = [rate['rate'] for rate in self.__self_unit_rates if rate['get_id'] in cur_get.currency_ids \
                 and rate['give_id'] in cur_give.currency_ids]
 
-class GoogleSheetsObserver(IObserver):
-    def __init__(self, sheet_name, spreadsheet_id, credentials_file):
-        self.sheet_name = sheet_name
-        self.spreadsheet_id = spreadsheet_id
-        self.sheet = SpreadsheetApp(credentials_file).open_by_id(spreadsheet_id=spreadsheet_id).get_sheet_by_name(sheet_name)
+class TelegramObserver(IObserver):
+    def __init__(self, bot, chat_id: int):
+        self.bot = bot
+        self.chat_id = chat_id
         self.exchangers = None
         self.currencies = None
         self.rates = None
         self.best_rate_cache = {}
+        self.message = ''
 
     async def async_update(self):
-        cell_callbacks = {}
+        self.message = 'Цена криптовалют на бирже и у проверенных обменников:\n'
 
         all_currencies_list = [OLD_NEW_TON_NAME.get(c, c) for c in CRYPTOS_LIST] + FIATS_LIST
         actual_prices = await asyncio.to_thread(cryptocompare.get_price, all_currencies_list, all_currencies_list)
@@ -141,36 +140,20 @@ class GoogleSheetsObserver(IObserver):
             self.best_rate_cache[cache_key] = best_rate
             return best_rate
 
-        async def write_table_actual_prices():
-            row_ind = 0
+        async def write_currency_info():
             for cript in CRYPTOS_LIST:
-                col_ind = 0
                 for exchange in ['Биржа'] + EXCHANGES:
                     for money in FIATS_LIST_PRICES:
                         if exchange == "Биржа":
-                            cell_callbacks[(row_ind, col_ind)] = (get_actual_price, (cript, money))
+                            rate = get_actual_price(cript, money)
                         else:
-                            cell_callbacks[(row_ind, col_ind)] = (get_best_rate, (exchange, cript, money))
-                        col_ind += 1
-                    col_ind += 1
-                row_ind += 1
-
-        async def get_data_range():
-            return self.sheet.get_range_from_a1('C5:P35')
+                            rate = get_best_rate(exchange, cript, money)
+                        if rate is not None:
+                            self.message += f"{cript} ->{exchange}: {rate} {money} \n"
         
-        async def get_backgrounds_data_range(data_range):
-            return data_range.get_backgrounds()
-        
-        async def get_values_data_range(data_range):
-            return data_range.get_values()
-        
-        task_data_range = asyncio.create_task(get_data_range())
-        data_range = await task_data_range
-        backgrounds, values = await asyncio.gather(get_backgrounds_data_range(data_range), get_values_data_range(data_range))
-
         async def get_top(n=10, money_list=['USDT', 'RUB'], cript_list=['BTC', 'ETH', 'TON', 'XMR', 'TRX']):
             try:
-                exchangers = {v['id']: v['name'] for v in self.exchangers.get().values()}
+                exchangers = {v['id']:v['name'] for v in self.exchangers.get().values()}
             except AttributeError:
                 logging.error('Failed to load exchangers from BestChange API for get top')
                 return
@@ -179,88 +162,56 @@ class GoogleSheetsObserver(IObserver):
                 currencies_dict = self.currencies.get()
             except AttributeError:
                 logging.error('Failed to load currencies from BestChange API for get top')
-                return
+                return 
             actual_prices = {}
             for m in money_list:
                 for c in cript_list:
-                    actual_prices[(c, m)] = get_actual_price(c, m)
+                    actual_prices[(c,m)] = get_actual_price(c,m)
 
-            tasks = []
             for rate in self.rates:
-                tasks.append(asyncio.create_task(process_rate(rate, exchangers, currencies_dict, normalized_prices, actual_prices, money_list, cript_list)))
+                exchanger_id = rate['exchange_id']
+                exchanger_name = exchangers[exchanger_id]
+                
+                get_currency_id = rate['get_id']
+                get_currency_name = currencies_dict[get_currency_id]['name']
+                
+                give_currency_id = rate['give_id']
+                give_currency_name = currencies_dict[give_currency_id]['name']
+                
+                money = None
+                for m in money_list:
+                    if m in give_currency_name:
+                        money = m
+                        break
+                cript = None
+                for c in cript_list:
+                    if c in get_currency_name:
+                        cript = c
+                        break
+                if any([money is None, cript is None]):
+                    continue
+                else:
+                    normalized_prices[exchanger_name].append(rate['rate']/actual_prices[(cript,money)])
 
-            await asyncio.gather(*tasks)
-
-            exchanger_ranks = {exchanger_name: np.mean(exchanger_prices_norm) \
-                               for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
+            exchanger_ranks = {exchanger_name:np.mean(exchanger_prices_norm) \
+                for exchanger_name, exchanger_prices_norm in normalized_prices.items()}
             exchangers = [e for e in exchanger_ranks]
             list_top_exchangers = list(sorted(exchangers, key=lambda x: exchanger_ranks[x]))[:n]
             return list_top_exchangers
+        
+        async def write_top_info():
+            top_exchanges = await get_top()
+            self.message += "Топ 10 продавцов на bestchange:\n"
+            for exch in top_exchanges:
+                self.message += f"{exch}\n"
 
-        async def process_rate(rate, exchangers, currencies_dict, normalized_prices, actual_prices, money_list, cript_list):
-            exchanger_id = rate['exchange_id']
-            exchanger_name = exchangers[exchanger_id]
+        task_currency_info = asyncio.create_task(write_currency_info())
+        task_top_info = asyncio.create_task(write_top_info())
+        await task_currency_info
+        await task_top_info
 
-            get_currency_id = rate['get_id']
-            get_currency_name = currencies_dict[get_currency_id]['name']
+        await self.bot.send_message(self.chat_id, self.message)
 
-            give_currency_id = rate['give_id']
-            give_currency_name = currencies_dict[give_currency_id]['name']
-
-            money = None
-            for m in money_list:
-                if m in give_currency_name:
-                    money = m
-                    break
-            cript = None
-            for c in cript_list:
-                if c in get_currency_name:
-                    cript = c
-                    break
-            if any([money is None, cript is None]):
-                return
-            else:
-                normalized_prices[exchanger_name].append(rate['rate'] / actual_prices[(cript, money)])
-
-        top_exchanges = await get_top()
-
-        async def write_table_top():
-            row_ind_top = 26 - 5  # топ начинается с 26 строчки, а значения нашей таблицы с 5
-            try:
-                for exch in top_exchanges:
-                    col_ind_top = 0
-                    cell_callbacks[(row_ind_top, col_ind_top)] = (lambda x: x, [exch])
-                    for cr in CRYPTOS_LIST:
-                        for mon in FIATS_LIST_TOP:
-                            col_ind_top += 1
-                            cell_callbacks[(row_ind_top, col_ind_top)] = (get_best_rate, (exch, cr, mon))
-                    row_ind_top += 1
-            except TypeError:
-                logging.error('Failed to load top of exchanges from BestChange API')
-            for (row_ind, col_ind), (fn, args) in cell_callbacks.items():
-                value = await asyncio.to_thread(fn, *args)  # Вызов функции в отдельном потоке
-                if value is None:
-                    value = '-'
-                values[row_ind][col_ind] = value
-            data_range.set_values(values)
-            data_range.set_backgrounds(backgrounds)
-
-        task_table_actual_prices = asyncio.create_task(write_table_actual_prices())
-        task_table_top = asyncio.create_task(write_table_top())
-        await asyncio.gather(task_table_actual_prices, task_table_top)
-
-    async def update_cell(self, values, row_ind, col_ind, fn, args):
-        result = fn(*args)
-        if asyncio.iscoroutine(result):
-            value = await result
-        else:
-            value = result
-        if value is None:
-            value = '-'
-        if row_ind < len(values) and col_ind < len(values[row_ind]):
-            values[row_ind][col_ind] = value
-        else:
-            logging.error(f"Index out of range: row {row_ind}, col {col_ind}")
 
     async def update(self):
         await self.async_update()

@@ -2,7 +2,7 @@ import logging
 import asyncio
 
 from abc import ABC, abstractmethod
-from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
+from observers import IObserver, TelegramObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
 from exchangers import Sova, NetEx24, Shahta, Ferma
 from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
 
@@ -72,7 +72,7 @@ class BestChangeManager(ISubject):
         tasks = []
         for observer in self.__observers:
             observer.set_unit_chnges_rates(all_rates)
-            if isinstance(observer, GoogleSheetsObserver):
+            if isinstance(observer, TelegramObserver):
                 observer.set_exchangers(exchangers)
                 observer.set_currencies(currencies)
             else:
