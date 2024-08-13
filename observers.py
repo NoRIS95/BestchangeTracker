@@ -98,7 +98,7 @@ class TelegramObserver(IObserver):
         self.message = ''
 
     async def async_update(self):
-        self.message = 'Цена криптовалют на бирже и у проверенных обменников:\n'
+        self.message = '__Цена криптовалют на бирже и у проверенных обменников:__\n'
 
         all_currencies_list = [OLD_NEW_TON_NAME.get(c, c) for c in CRYPTOS_LIST] + FIATS_LIST
         actual_prices = await asyncio.to_thread(cryptocompare.get_price, all_currencies_list, all_currencies_list)
@@ -201,7 +201,7 @@ class TelegramObserver(IObserver):
         
         async def write_top_info():
             top_exchanges = await get_top()
-            self.message += "Топ 10 продавцов на bestchange:\n"
+            self.message += "__Топ 10 продавцов на bestchange:__\n"
             for exch in top_exchanges:
                 self.message += f"{exch}\n"
 

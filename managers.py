@@ -69,7 +69,6 @@ class BestChangeManager(ISubject):
         except AttributeError:
             logging.error("Failed to load currencies from BestChange API.")
         
-        tasks = []
         for observer in self.__observers:
             observer.set_unit_chnges_rates(all_rates)
             if isinstance(observer, TelegramObserver):
@@ -85,9 +84,8 @@ class BestChangeManager(ISubject):
                 except AttributeError:
                     logging.error(f'Failed to load exchanger {observer.name} from BestChange API')
                     continue
-            tasks.append(asyncio.create_task(observer.update()))
+            await observer.update()
         
-        await asyncio.gather(*tasks)
 
     async def start_updates(self, interval: int = 5):
         while True:

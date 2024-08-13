@@ -1,28 +1,12 @@
 import asyncio
 
-from aiogram import Dispatcher, types
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
-from api import BestChange
 from configs import *
 from callbacks import call_best_change_manager, call_telegram_observer, create_currencies_and_table
 
-TASK_CHANGE_MANAGER = None
-TASK_TELEGRAM_OBSERVER = None
-CHANGE_MANAGER = None
-TELEGRAM_OBSERVER = None
-
-# Создаем объект бота
-
-# Создаем хранилище для состояний
-storage = MemoryStorage()
-
-# Создаем объект диспетчера и передаем в него хранилище
-dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(LoggingMiddleware())
 
 class Form(StatesGroup):
     waiting_for_confirmation = State()
@@ -30,7 +14,7 @@ class Form(StatesGroup):
 @dp.message_handler(commands=["start"])
 async def hello_message(message):
     user_id = str(message.from_user.id)
-    await bot.send_message(message.chat.id, f'Привет, {message.from_user.first_name}! :) Для подробной информации введите /info')
+    await bot.send_message(message.chat.id, f'Здравствуйте, {message.from_user.first_name}! :) Для подробной информации введите /info')
     USER_CONDITIONS.data[user_id] = StatusDialog.STATUS_INFO.value
 
 @dp.message_handler(commands=['info'])

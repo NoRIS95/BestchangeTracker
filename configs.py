@@ -2,9 +2,12 @@ import os
 import enum
 
 from dotenv import load_dotenv, find_dotenv
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import Dispatcher
+from aiogram import Bot, Dispatcher
 from simplejsondb import Database
+
 from api import BestChange
 
 BEST_CHANGE_API = BestChange(cache_seconds=45, exchangers_reviews=False, split_reviews=False, ssl=False, daemon=True)
@@ -13,6 +16,18 @@ TG_TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_ID = os.getenv('ADMIN_ID')
 bot = Bot(token=TG_TOKEN)
 dp = Dispatcher(bot)
+
+TASK_CHANGE_MANAGER = None
+TASK_TELEGRAM_OBSERVER = None
+CHANGE_MANAGER = None
+TELEGRAM_OBSERVER = None
+
+# Создаем хранилище для состояний
+storage = MemoryStorage()
+
+# Создаем объект диспетчера и передаем в него хранилище
+dp = Dispatcher(bot, storage=storage)
+dp.middleware.setup(LoggingMiddleware())
 
 USER_CONDITIONS = Database('user_states.json', default=dict())
 
