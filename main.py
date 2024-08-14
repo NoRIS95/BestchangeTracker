@@ -14,7 +14,7 @@ class Form(StatesGroup):
 @dp.message_handler(commands=["start"])
 async def hello_message(message):
     user_id = str(message.from_user.id)
-    await bot.send_message(message.chat.id, f'Здравствуйте, {message.from_user.first_name}! :) Для подробной информации введите /info')
+    await bot.send_message(message.chat.id, f'Здравствуйте, {message.from_user.first_name}! Для подробной информации введите /info')
     USER_CONDITIONS.data[user_id] = StatusDialog.STATUS_INFO.value
 
 @dp.message_handler(commands=['info'])
@@ -50,11 +50,13 @@ async def handle_confirmation(message: types.Message, state: FSMContext):
                 TELEGRAM_OBSERVER = await TASK_TELEGRAM_OBSERVER
 
                 CHANGE_MANAGER.register_observer(TELEGRAM_OBSERVER)
-                await CHANGE_MANAGER.notify_observers()
+                message_to_send = await CHANGE_MANAGER.notify_observers()
+                await bot.send_message(chat_id, message_to_send, parse_mode="HTML")
 
             elif message.text == "Обновить":
                 # Повторно используем уже созданные объекты
-                await CHANGE_MANAGER.notify_observers()
+                message_to_send = await CHANGE_MANAGER.notify_observers()
+                await bot.send_message(chat_id, message_to_send, parse_mode="HTML")
 
     # Сбрасываем состояние, чтобы оно могло быть установлено заново
     await state.finish()

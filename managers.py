@@ -74,6 +74,8 @@ class BestChangeManager(ISubject):
             if isinstance(observer, TelegramObserver):
                 observer.set_exchangers(exchangers)
                 observer.set_currencies(currencies)
+                send_message = await observer.update()
+                return send_message
             else:
                 try:
                     exchanger_id = list(exchangers.search_by_name(observer.name).keys())[0]

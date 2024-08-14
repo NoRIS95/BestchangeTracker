@@ -54,13 +54,15 @@ class BestChangeUnit(IObserver):
         async def async_set_naked_price_usdt(cur, currency):
             return cur.set_naked_price_usdt(currency.get_naked_price_usdt())
 
-        tasks = []
+        # tasks = []
         for currency in currencies:
             currency: Currency
             cur: Currency = self.currencies_dict[currency.name]
-            tasks.append(asyncio.create_task(async_set_naked_price_rub(cur, currency)))
-            tasks.append(asyncio.create_task(async_set_naked_price_usdt(cur, currency)))
-        await asyncio.gather(*tasks)
+            await asyncio.create_task(async_set_naked_price_rub(cur, currency))
+            await asyncio.create_task(async_set_naked_price_usdt(cur, currency))
+            # tasks.append(asyncio.create_task(async_set_naked_price_rub(cur, currency)))
+            # tasks.append(asyncio.create_task(async_set_naked_price_usdt(cur, currency)))
+        # await asyncio.gather(*tasks)
 
     async def update(self):
         await self.async_update_rates(self.currencies_dict.values())
@@ -98,7 +100,7 @@ class TelegramObserver(IObserver):
         self.message = ''
 
     async def async_update(self):
-        self.message = '__Цена криптовалют на бирже и у проверенных обменников:__\n'
+        self.message = '<b>Цена криптовалют на бирже и у проверенных обменников:</b>\n'
 
         all_currencies_list = [OLD_NEW_TON_NAME.get(c, c) for c in CRYPTOS_LIST] + FIATS_LIST
         actual_prices = await asyncio.to_thread(cryptocompare.get_price, all_currencies_list, all_currencies_list)
@@ -201,7 +203,7 @@ class TelegramObserver(IObserver):
         
         async def write_top_info():
             top_exchanges = await get_top()
-            self.message += "__Топ 10 продавцов на bestchange:__\n"
+            self.message += "<b>Топ 10 продавцов на bestchange:</b>\n"
             for exch in top_exchanges:
                 self.message += f"{exch}\n"
 
@@ -210,11 +212,13 @@ class TelegramObserver(IObserver):
         await task_currency_info
         await task_top_info
 
-        await self.bot.send_message(self.chat_id, self.message)
+        # await self.bot.send_message(self.chat_id, self.message)
+        return self.message
 
 
     async def update(self):
-        await self.async_update()
+        send_message = await self.async_update()
+        return send_message
 
     def set_unit_chnges_rates(self, rates):
         self.rates = rates
