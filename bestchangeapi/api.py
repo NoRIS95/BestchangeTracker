@@ -27,6 +27,7 @@ class Rates:
                     'city_id': int(val[10]),
                 })
             except ZeroDivisionError:
+                # Иногда бывает курс N:0 и появляется ошибка деления на 0.
                 pass
 
     def get(self):
@@ -155,7 +156,23 @@ class BestChange:
     __file_cities = 'bm_cities.dat'
     __file_top = 'bm_top.dat'
 
-    def __init__(self, cache=True, cache_seconds=15, cache_path='./', exchangers_reviews=False, ssl=True):
+    def __init__(self, load=True, cache=True, cache_seconds=15, cache_path='./', exchangers_reviews=False, split_reviews=False, ssl=True, proxy=None):
+        """
+        :param load: True (default). Загружать всю базу сразу
+        :param cache: True (default). Использовать кеширование
+            (в связи с тем, что сервис отдает данные, в среднем, 15 секунд)
+        :param cache_seconds: 15 (default). Сколько времени хранятся кешированные данные.
+        В поддержке писали, что загружать архив можно не чаще раз в 30 секунд, но я не обнаружил никаких проблем,
+        если загружать его чаще
+        :param cache_path: './' (default). Папка хранения кешированных данных (zip-архива)
+        :param exchangers_reviews: False (default). Добавить в информацию об обменниках количество отзывов. Работает
+        только с включенными обменниками и у которых минимум одно направление на BestChange.
+        :param split_reviews: False (default). По-умолчанию BestChange отдает отрицательные и положительные отзывы
+        одним значением через точку. Так как направлений обмена и обменников огромное количество, то это значение
+        по-умолчанию отключено, чтобы не вызывать лишнюю нагрузку
+        :param ssl: Использовать SSL соединение для загрузки данных
+        :param proxy: Использовать прокси. Пример: {'http': '127.0.0.1', 'https': '127.0.0.1'}
+        """
         self.__cache = cache
         self.__cache_seconds = cache_seconds
         self.__cache_path = cache_path + self.__filename
