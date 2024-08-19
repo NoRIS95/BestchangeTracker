@@ -211,7 +211,6 @@ class TelegramObserver(IObserver):
         task_top_info = asyncio.create_task(write_top_info())
         await task_currency_info
         await task_top_info
-
         # await self.bot.send_message(self.chat_id, self.message)
         return self.message
 

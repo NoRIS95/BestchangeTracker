@@ -1,20 +1,20 @@
 import os
-import enum
 
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import Dispatcher
 from aiogram import Bot, Dispatcher
 from simplejsondb import Database
 
-from api import BestChange
+from bestchangeapi.api import BestChange
+# from api import BestChange
 
-BEST_CHANGE_API = BestChange(cache_seconds=45, exchangers_reviews=False, split_reviews=False, ssl=False, daemon=True)
+BEST_CHANGE_API = BestChange(cache_seconds=45, exchangers_reviews=False, ssl=False)
 load_dotenv()
-TG_TOKEN = os.getenv('BOT_TOKEN')
-ADMIN_ID = os.getenv('ADMIN_ID')
-bot = Bot(token=TG_TOKEN)
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+# ADMIN_ID = os.getenv('ADMIN_ID')
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
 TASK_CHANGE_MANAGER = None
@@ -30,11 +30,6 @@ dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(LoggingMiddleware())
 
 USER_CONDITIONS = Database('user_states.json', default=dict())
-
-class StatusDialog(enum.Enum):
-    STATUS_OF_GREEЕTINGS = 1
-    STATUS_INFO = 2
-    STATUS_OF_ASK_CRIPT = 3
 
 LOG_DIR = 'logs'
 

@@ -4,12 +4,11 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
+
 from configs import *
-from callbacks import call_best_change_manager, call_telegram_observer, create_currencies_and_table
+from callbacks import get_crypt_info
+from classes import StatusDialog, Form
 
-
-class Form(StatesGroup):
-    waiting_for_confirmation = State()
 
 @dp.message_handler(commands=["start"])
 async def hello_message(message):
@@ -31,7 +30,8 @@ async def get_user_info(message):
 
 @dp.message_handler(state=Form.waiting_for_confirmation)
 async def handle_confirmation(message: types.Message, state: FSMContext):
-    global TASK_CHANGE_MANAGER, TASK_TELEGRAM_OBSERVER, CHANGE_MANAGER, TELEGRAM_OBSERVER
+    # global TASK_CHANGE_MANAGER, TASK_TELEGRAM_OBSERVER, CHANGE_MANAGER, TELEGRAM_OBSERVER
+    global CHANGE_MANAGER
     user_id = str(message.from_user.id)
     chat_id = message.chat.id
 
@@ -39,24 +39,12 @@ async def handle_confirmation(message: types.Message, state: FSMContext):
         if USER_CONDITIONS.data[user_id] == StatusDialog.STATUS_INFO.value \
               or USER_CONDITIONS.data[user_id] == StatusDialog.STATUS_OF_ASK_CRIPT.value:
             if message.text == "ДА":
-                # Первый раз запрашиваем данные
-                USER_CONDITIONS.data[user_id] = StatusDialog.STATUS_OF_ASK_CRIPT.value
-                task_currencies_and_table = asyncio.create_task(create_currencies_and_table())
-                rub, usdt, ton, btc, xmr, eth, trx = await task_currencies_and_table
-
-                TASK_CHANGE_MANAGER = asyncio.create_task(call_best_change_manager(BEST_CHANGE_API, rub, usdt, ton, btc, xmr, eth, trx))
-                TASK_TELEGRAM_OBSERVER = asyncio.create_task(call_telegram_observer(bot=bot, chat_id=chat_id))
-                CHANGE_MANAGER = await TASK_CHANGE_MANAGER
-                TELEGRAM_OBSERVER = await TASK_TELEGRAM_OBSERVER
-
-                CHANGE_MANAGER.register_observer(TELEGRAM_OBSERVER)
-                message_to_send = await CHANGE_MANAGER.notify_observers()
+                CHANGE_MANAGER, message_to_send = await asyncio.create_task(get_crypt_info(bot, user_id, chat_id))
                 await bot.send_message(chat_id, message_to_send, parse_mode="HTML")
-
             elif message.text == "Обновить":
-                # Повторно используем уже созданные объекты
                 message_to_send = await CHANGE_MANAGER.notify_observers()
                 await bot.send_message(chat_id, message_to_send, parse_mode="HTML")
+
 
     # Сбрасываем состояние, чтобы оно могло быть установлено заново
     await state.finish()
