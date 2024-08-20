@@ -1,6 +1,6 @@
 import asyncio
 
-from api import BestChange
+from bestchangeAPI.api import BestChange
 
 from logger import setup_logger
 from callbacks import call_best_change_manager, call_googlesheetsobserver, create_currencies_and_table

@@ -1,26 +1,13 @@
-from io import TextIOWrapper
-from zipfile import ZipFile
-from urllib.request import urlretrieve, ProxyHandler, build_opener, install_opener
 import os
-import platform
 import time
-from itertools import groupby
 import ssl as sslib
 import concurrent.futures
 import asyncio
 
-
-
-
-def creation_date(path_to_file):
-    if platform.system() == 'Windows':
-        return os.path.getctime(path_to_file)
-    else:
-        stat = os.stat(path_to_file)
-        try:
-            return stat.st_birthtime
-        except AttributeError:
-            return stat.st_mtime
+from io import TextIOWrapper
+from zipfile import ZipFile
+from urllib.request import urlretrieve, ProxyHandler, build_opener, install_opener
+from itertools import groupby
 
 
 class Rates:

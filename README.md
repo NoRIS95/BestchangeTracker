@@ -75,13 +75,33 @@
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/whatever"
   }
   ```
-  6.
+  26. Скопировать файл .env для id таблицы и названия вкладки
   ```
   cp .env.template .env
   SPREADSHEET_ID=<впиcать сюда id таблицы> # в .env файле
   SHEET_NAME=<впиcать сюда название нужной вкладки таблицы> # в .env файле
   ```
-  ## Запуск скрипта:
+  ### Создание контейнера для запуска телеграмм-бота ###
+  1. Проверка, установлен ли Docker на сервере
   ```
-  python main.py
+  docker -v
+  ```
+  Если докер установлен, то отобразится примерно такое сообщение
+  ![](assets/Docker_is_installed.png "Docker is installed.")
+  В таком случае можно переходить сразу к п.3, если такое сообщение не отобразилось, значит переходим к п.2
+
+  2. Установка Docker
+
+  ```
+  sudo apt install Docker
+  ```
+  3. Сборка Docker образа
+  ```
+  sudo docker build -t bestchange-sheet .
+  ```
+  
+  ### Запуск скрипта ###
+  
+  ```
+  sudo docker run --env-file .env --name bestchange-sheet-container bestchange-sheet
   ```

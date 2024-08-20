@@ -3,7 +3,6 @@ from decimal import Decimal
 from observers import IObserver, BestChangeUnit
 from currencies import Currency, RUB, USDT, BTC, ETH
 from configs import EXCHANGES, EX_SOVA, EX_NETEX24, EX_SHAHTA, EX_FERMA
-import time
 
 class HiddenExchanger(IObserver):
     """ На данный момент предполагаем, что комиссия указываается в
@@ -28,11 +27,8 @@ class HiddenExchanger(IObserver):
 
 class Sova(BestChangeUnit):
     def __init__(self, list_currencies):
-        start = time.time()
         super().__init__(list_currencies)
         self.name = EXCHANGES[EX_SOVA]
-        end = time.time()
-        print(f'Время загрузки Sova: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
 
 class NetEx24(BestChangeUnit):
     def __init__(self, list_currencies):
