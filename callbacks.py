@@ -9,6 +9,10 @@ from managers import BestChangeManager
 from configs import USER_CONDITIONS, BEST_CHANGE_API
 from classes import StatusDialog
 
+async def init_bestchange_api():
+    global BEST_CHANGE_API
+    BEST_CHANGE_API = BestChange(cache_seconds=45, exchangers_reviews=False, ssl=False)
+    await BEST_CHANGE_API.load()
 
 async def call_best_change_manager(best_change_api, rub, usdt, ton, btc, xmr, eth, trx):
     return BestChangeManager(best_change_api, rub, usdt, ton, btc, xmr, eth, trx)
@@ -27,7 +31,7 @@ async def create_currencies():
     return rub, usdt, ton, btc, xmr, eth, trx
 
 async def get_crypt_info(bot, user_id, chat_id):
-    global TASK_CHANGE_MANAGER, TASK_TELEGRAM_OBSERVER, CHANGE_MANAGER, TELEGRAM_OBSERVER
+    global TASK_CHANGE_MANAGER, TASK_TELEGRAM_OBSERVER, CHANGE_MANAGER, TELEGRAM_OBSERVER, BEST_CHANGE_API
     USER_CONDITIONS.data[user_id] = StatusDialog.STATUS_OF_ASK_CRIPT.value
     task_currencies = asyncio.create_task(create_currencies())
     rub, usdt, ton, btc, xmr, eth, trx = await task_currencies

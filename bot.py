@@ -6,7 +6,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
 
 from configs import *
-from callbacks import get_crypt_info
+from callbacks import get_crypt_info, init_bestchange_api
 from classes import StatusDialog, Form
 
 
@@ -58,4 +58,5 @@ async def handle_confirmation(message: types.Message, state: FSMContext):
     await Form.waiting_for_confirmation.set()
 
 if __name__ == '__main__':
+    asyncio.run(init_bestchange_api())
     executor.start_polling(dp, skip_updates=True)

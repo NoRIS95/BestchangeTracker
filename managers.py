@@ -4,7 +4,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from observers import IObserver, TelegramObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
 from exchangers import Sova, NetEx24, Shahta, Ferma
-from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
+from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS
 
 
 
@@ -57,7 +57,7 @@ class BestChangeManager(ISubject):
         return usdt_ids
 
     async def notify_observers(self):
-        await self.__bestChangeAPI.load()
+        self.__bestChangeAPI
         all_rates = self.__bestChangeAPI.rates().get()
         exchangers, currencies = self.__bestChangeAPI.exchangers(), self.__bestChangeAPI.currencies()
         

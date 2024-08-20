@@ -6,14 +6,14 @@ from decimal import Decimal
 from configs import *
 
 
-def make_cript_dict_cryptocompare(): 
-    cript_list = []
-    for i in CRYPTOS_LIST:
-        if i == list(OLD_NEW_TON_NAME.keys())[OLD_TON_NAME_NUM]:
-            i = OLD_NEW_TON_NAME[i]
-        cript_list.append(i)
-    crypt_exch_prices = cryptocompare.get_price(cript_list, FIATS_LIST + ['USDT'])
-    return crypt_exch_prices
+# def make_cript_dict_cryptocompare(): 
+#     cript_list = []
+#     for i in CRYPTOS_LIST:
+#         if i == list(OLD_NEW_TON_NAME.keys())[OLD_TON_NAME_NUM]:
+#             i = OLD_NEW_TON_NAME[i]
+#         cript_list.append(i)
+#     crypt_exch_prices = cryptocompare.get_price(cript_list, FIATS_LIST + ['USDT'])
+#     return crypt_exch_prices
 
 class Currency(ABC):    #Валюта
     def __init__(self, naked_price_rub: Decimal = Decimal('0.0'), naked_price_usdt: Decimal = Decimal('0.0'),
