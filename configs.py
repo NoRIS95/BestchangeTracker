@@ -1,6 +1,3 @@
-import os
-
-from dotenv import load_dotenv
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import Dispatcher
@@ -8,11 +5,11 @@ from aiogram import Bot, Dispatcher
 from simplejsondb import Database
 
 from bestchangeapi.api import BestChange
-# from api import BestChange
+from classes import Tg_bot
 
 BEST_CHANGE_API = BestChange(cache_seconds=45, exchangers_reviews=False, ssl=False)
-load_dotenv()
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+# tg_bot = Tg_bot()
+BOT_TOKEN = Tg_bot().get_bot_token()
 # ADMIN_ID = os.getenv('ADMIN_ID')
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
