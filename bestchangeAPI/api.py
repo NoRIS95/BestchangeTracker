@@ -9,6 +9,7 @@ from zipfile import ZipFile
 from urllib.request import urlretrieve, ProxyHandler, build_opener, install_opener
 from itertools import groupby
 
+from .function_creation_date import creation_date
 
 class Rates:
     def __init__(self, text, split_reviews):
@@ -328,7 +329,7 @@ class BestChange:
 async def main():
     start = time.time()
     proxy = None
-    api = BestChange(cache_seconds=30, exchangers_reviews=False, split_reviews=False, ssl=False, proxy=proxy, daemon=True)
+    api = BestChange(cache_seconds=45, exchangers_reviews=False, split_reviews=False, ssl=False, proxy=proxy, daemon=True)
     end = time.time()
     print(f'Время выполнения get_bestchangeapi: {(end - start) * 1000:.2f} мс')  # Время в миллисекундах
 
