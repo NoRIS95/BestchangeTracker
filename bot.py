@@ -8,6 +8,7 @@ from aiogram.utils import executor
 from configs import *
 from callbacks import get_crypt_info, init_bestchange_api
 from classes import StatusDialog, Form
+from logger import setup_logger
 
 
 @dp.message_handler(commands=["start"])
@@ -44,6 +45,12 @@ async def handle_confirmation(message: types.Message, state: FSMContext):
             elif message.text == "Обновить":
                 message_to_send = await CHANGE_MANAGER.notify_observers()
                 await bot.send_message(chat_id, message_to_send, parse_mode="HTML")
+            elif message.text == "НЕТ":
+                message_to_send = "До свидания! Если захотите снова ознакомиться с информацией по криптовалютам, нажмите /start "
+                USER_CONDITIONS.data[user_id] = StatusDialog.STATUS_OF_GREEЕTINGS.value
+                await bot.send_message(chat_id, message_to_send, reply_markup=types.ReplyKeyboardRemove())
+                await state.finish()
+                return
 
 
     # Сбрасываем состояние, чтобы оно могло быть установлено заново
@@ -58,5 +65,6 @@ async def handle_confirmation(message: types.Message, state: FSMContext):
     await Form.waiting_for_confirmation.set()
 
 if __name__ == '__main__':
+    setup_logger()
     asyncio.run(init_bestchange_api())
     executor.start_polling(dp, skip_updates=True)
