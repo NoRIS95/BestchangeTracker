@@ -6,7 +6,7 @@ N_TOP=10
 
 EXCHANGES = ["Сова", 'Alfabit', 'Шахта', 'Ферма']
 EX_SOVA = 0
-EX_NETEX24 = 1
+EX_ALFABIT = 1
 EX_SHAHTA = 2
 EX_FERMA = 3
 

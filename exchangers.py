@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from observers import IObserver, BestChangeUnit
 from currencies import Currency, RUB, USDT, BTC, ETH
-from configs import EXCHANGES, EX_SOVA, EX_NETEX24, EX_SHAHTA, EX_FERMA
+from configs import EXCHANGES, EX_SOVA, EX_ALFABIT, EX_SHAHTA, EX_FERMA
 
 class HiddenExchanger(IObserver):
     """ На данный момент предполагаем, что комиссия указываается в
@@ -30,10 +30,10 @@ class Sova(BestChangeUnit):
         super().__init__(list_currencies)
         self.name = EXCHANGES[EX_SOVA]
 
-class NetEx24(BestChangeUnit):
+class AlfaBit(BestChangeUnit):
     def __init__(self, list_currencies):
         super().__init__(list_currencies)
-        self.name = EXCHANGES[EX_NETEX24]
+        self.name = EXCHANGES[EX_ALFABIT]
 
 
 class Shahta(BestChangeUnit):

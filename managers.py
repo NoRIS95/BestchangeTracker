@@ -4,7 +4,7 @@ import time
 
 from abc import ABC, abstractmethod
 from observers import IObserver, GoogleSheetsObserver, CRYPTOS_LIST, FIATS_LIST, FIAT_RUB
-from exchangers import Sova, NetEx24, Shahta, Ferma
+from exchangers import Sova, AlfaBit, Shahta, Ferma
 from currencies import  FIAT_CARDS_METHODS, CRYPTO_USDT, USDT_PROTOCOLS, make_cript_dict_cryptocompare
 
 
@@ -35,10 +35,10 @@ class BestChangeManager(ISubject):
         self.__bestChangeAPI = best_change_api
         
         self.__Sova_unit = Sova([rub, usdt, ton, btc, xmr, eth, trx])
-        self.__Netex_unit = NetEx24([rub, usdt, ton, btc, xmr, eth, trx])
+        self.__AlfaBit_unit = AlfaBit([rub, usdt, ton, btc, xmr, eth, trx])
         self.__Shahta_unit = Shahta([rub, usdt, ton, btc, xmr, eth, trx])
         self.__Ferma_unit = Ferma([rub, usdt, ton, btc, xmr, eth, trx])
-        self.__observers = [self.__Shahta_unit, self.__Netex_unit, self.__Sova_unit, self.__Ferma_unit]
+        self.__observers = [self.__Shahta_unit, self.__AlfaBit_unit, self.__Sova_unit, self.__Ferma_unit]
 
         self.__rub = rub
         self.__usdt = usdt
