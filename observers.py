@@ -123,8 +123,12 @@ class GoogleSheetsObserver(IObserver):
             cache_key = (exchanger_name, get_currency_name, give_currency_name)
             if cache_key in self.best_rate_cache:
                 return self.best_rate_cache[cache_key]
-            get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)
-            give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
+            get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)  #здесь ищется TONCOIN вместо TON
+            give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)  #возможно не стоит комментить эти строки
+            if exchanger_name == 'Alfabit' and get_currency_name == 'TONCOIN':
+                get_currency_name = 'Toncoin (TON)'
+            # elif exchanger_name == 'Alfabit' and get_currency_name == 'USDT':
+            #     get_currency_name = 'Tether(USDT) TRC20'  #тут еще решаю вопрос с долларом. Пока этот момент точно не реализован
             try:
                 exchanger_search_result = self.exchangers.search_by_name(exchanger_name)
             except AttributeError:
