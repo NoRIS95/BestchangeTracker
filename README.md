@@ -11,6 +11,15 @@ git clone https://github.com/NoRIS95/BestchangeTracker.git
 cp .env.template .env
 BOT_TOKEN=<вписать сюда токен тг-бота из п.1> # в .env файле
 ```
+4. Создать виртуальное окружение и активировать
+```
+python3 -m venv env
+source ./env/bin/activate
+```
+5. Установить Python зависимости
+  ```
+  pip install -r requirements.txt
+  ```
 
 ### Создание контейнера для запуска телеграмм-бота ###
 1. Проверка, установлен ли Docker на сервере
