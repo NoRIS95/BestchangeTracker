@@ -123,12 +123,18 @@ class GoogleSheetsObserver(IObserver):
             cache_key = (exchanger_name, get_currency_name, give_currency_name)
             if cache_key in self.best_rate_cache:
                 return self.best_rate_cache[cache_key]
-            get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name)  #здесь ищется TONCOIN вместо TON
-            give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)  #возможно не стоит комментить эти строки
+            get_currency_name = OLD_NEW_TON_NAME.get(get_currency_name, get_currency_name) 
+            give_currency_name = OLD_NEW_TON_NAME.get(give_currency_name, give_currency_name)
             if exchanger_name == 'Alfabit' and get_currency_name == 'TONCOIN':
                 get_currency_name = 'Toncoin (TON)'
-            # elif exchanger_name == 'Alfabit' and get_currency_name == 'USDT':
-            #     get_currency_name = 'Tether(USDT) TRC20'  #тут еще решаю вопрос с долларом. Пока этот момент точно не реализован
+            elif exchanger_name == 'Шахта' and get_currency_name == 'TONCOIN':
+                get_currency_name = 'TON'
+            elif exchanger_name == 'Ферма' and get_currency_name == 'TONCOIN':
+                get_currency_name = 'TON'
+            elif exchanger_name == 'Ферма' and get_currency_name == 'XMR':
+                get_currency_name = 'XMR Monero'
+            # elif exchanger_name == 'Сова' and get_currency_name == 'XMR':
+            #     get_currency_name = 'Monero (XMR)'
             try:
                 exchanger_search_result = self.exchangers.search_by_name(exchanger_name)
             except AttributeError:
@@ -143,11 +149,21 @@ class GoogleSheetsObserver(IObserver):
                             if (get_currency_name in cur['name'])}
                 give_cur_ids = {cur['id'] for cur in self.currencies.search_by_name(give_currency_name).values() \
                             if (give_currency_name in cur['name'])}
+                # if exchanger_name == 'Alfabit' and get_currency_name == 'Toncoin (TON)':
+                #     print(f'get_cur_ids: {get_cur_ids}\n give_cur_ids: {give_cur_ids}')
             except:
                 logging.error(f'Failed to search getting currency or giving currency of exchanger {exchanger_name} from BestChange API for get best rate')
                 return
+            # if exchanger_name == 'Сова' and get_currency_name=='XMR':
+            #     with open('rates_sova.txt', 'w') as f:
+            #         for r in self.rates:
+            #             if r['exchange_id'] == exchanger_id:
+            #                 f.write(str(r))
+            #     print('Список сформирован')
             rates = [r['rate'] for r in self.rates if r['exchange_id'] == exchanger_id and r['give_id'] \
                         in give_cur_ids and r['get_id'] in get_cur_ids]
+            # if exchanger_name == 'Ферма' and get_currency_name=='XMR':
+            #     print(f'rates: {rates}')
             if len(rates) == 0:
                 return None
             best_rate = min(rates)
